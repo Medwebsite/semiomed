@@ -293,9 +293,9 @@ Règles :
 - Donne les doses seulement si elles sont standard ; précise « dose usuelle adulte » et rappelle les contre-indications majeures.
 - Utilise des titres « ## » et des listes « - ». Pas de tableaux.
 - Tu t'adresses à des étudiants, jamais à un patient qui chercherait à se soigner seul.`;
-const sys = { role: "system", content: [{ type: "text", text: SYSTEM }] };
-const user = (t) => ({ role: "user", content: [{ type: "text", text: t }] });
-const asst = (t) => ({ role: "assistant", content: [{ type: "text", text: t }] });
+const sys = { role: "system", content: SYSTEM };
+const user = (t) => ({ role: "user", content: t });
+const asst = (t) => ({ role: "assistant", content: t });
 
 const MODULES = {
   cas: {
