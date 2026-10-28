@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sémio — IA médicale locale</title>
+<meta name="description" content="IA médicale pour étudiants qui tourne entièrement dans ton navigateur : cas cliniques, cours, mécanismes, recherche.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#f3f5f8; --paper:#fff; --ink:#14213a; --muted:#5a6680; --line:#dde2ea;
+  --grid:rgba(214,72,104,.10); --accent:#c9365a; --accent-ink:#fff; --accent-soft:#fbe7ec;
+  --ok:#1f7a5a; --ok-soft:#e2f3ec; --warn:#a86300; --warn-soft:#fdf0db; --crit:#b3202f; --crit-soft:#fbe3e5;
+  --field:#f7f9fb; --focus:#2f6fdc;
+  --f-display:"Schibsted Grotesk",system-ui,sans-serif;
+  --f-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0d1422; --paper:#141d2f; --ink:#e6ebf4; --muted:#93a0b8; --line:#263249;
+  --grid:rgba(240,110,140,.08); --accent:#f0698b; --accent-ink:#1a0a10; --accent-soft:#3a1b26;
+  --ok:#5fd0a3; --ok-soft:#123327; --warn:#f2b25c; --warn-soft:#3a2a10; --crit:#ff7a85; --crit-soft:#3d1519;
+  --field:#0f1828; --focus:#7aa7ff; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background-color:var(--paper);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:12px 12px;border-bottom:1px solid var(--line)}
+header.top .wrap{padding-block:20px 16px;display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.brand h1{font:800 clamp(28px,4vw,38px)/1 var(--f-display);letter-spacing:-.02em;margin:0;display:flex;align-items:center;gap:10px}
+.brand p{margin:4px 0 0;color:var(--muted);max-width:62ch}
+.label{font:600 12px/1.2 var(--f-body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.disclaimer{font-size:13px;color:var(--muted);max-width:46ch;border-left:2px solid var(--accent);padding-left:10px;margin:0}
+
+/* model bar */
+.modelbar{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-top:18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--muted);flex:none}
+.dot.ready{background:var(--ok)} .dot.loading{background:var(--warn);animation:pulse 1s infinite alternate} .dot.err{background:var(--crit)}
+@keyframes pulse{to{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.dot.loading{animation:none}}
+.mstatus{flex:1 1 260px;min-width:0}
+.mstatus strong{display:block}
+.mstatus span{color:var(--muted);font-size:14px}
+.bar{height:6px;background:var(--field);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+select,input[type=text],input[type=number],textarea{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+textarea{resize:vertical}
+.modelbar select{width:auto}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.btn{font:700 15px/1 var(--f-display);border-radius:8px;padding:11px 16px;cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;gap:8px;justify-content:center;white-space:nowrap}
+.btn-primary{background:var(--accent);color:var(--accent-ink)}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn-ghost:hover{background:var(--field)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn-sm{font-size:13px;padding:7px 10px}
+
+/* tabs */
+.tabs{display:flex;gap:4px;margin-top:18px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{font:700 15px/1 var(--f-display);padding:12px 14px;border:0;background:none;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.panel{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:20px;margin-top:18px;align-items:start}
+@media (max-width:900px){.panel{grid-template-columns:1fr}}
+.sheet{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.sheet h2{font:700 18px/1.2 var(--f-display);margin:0}
+.sheet p.hint{margin:0;color:var(--muted);font-size:14px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:13px;color:var(--muted);font-weight:600}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.vitals input{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.actions .btn-primary{flex:1 1 180px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font:600 13px/1.1 var(--f-body);padding:7px 10px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;text-align:left}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+
+/* output */
+.out{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;min-width:0;display:flex;flex-direction:column;gap:14px}
+.out-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.speed{font:600 12px/1 var(--f-mono);color:var(--muted)}
+.thread{display:flex;flex-direction:column;gap:12px}
+.msg{border-radius:10px;padding:12px 14px;overflow-wrap:anywhere;min-width:0}
+.msg.u{background:var(--accent-soft);align-self:flex-end;max-width:92%;font-size:15px}
+.msg.a{background:var(--field);border:1px solid var(--line)}
+.msg.a h2,.msg.a h3,.msg.a h4{font:700 16px/1.25 var(--f-display);margin:14px 0 6px}
+.msg.a h2:first-child,.msg.a h3:first-child{margin-top:0}
+.msg.a p{margin:0 0 8px;max-width:72ch}
+.msg.a ul,.msg.a ol{margin:0 0 8px;padding-left:20px}
+.msg.a li{margin:2px 0}
+.msg.a code{font-family:var(--f-mono);font-size:13px;background:var(--paper);padding:1px 4px;border-radius:4px}
+.msg.a .warnline{border-left:3px solid var(--crit);background:var(--crit-soft);padding:6px 10px;border-radius:0 6px 6px 0;margin:4px 0 8px}
+.empty{color:var(--muted)}
+.empty ul{margin:6px 0 0;padding-left:20px}
+.composer{display:flex;gap:8px}
+.composer textarea{min-height:44px;flex:1}
+.refs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.refs li{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--paper)}
+.refs a{color:var(--accent);font-weight:700;text-decoration:none}
+.refs a:hover{text-decoration:underline}
+.refs .meta{font-size:13px;color:var(--muted)}
+.banner{border-radius:8px;padding:10px 14px;font-size:14px}
+.banner.err{background:var(--crit-soft);color:var(--crit)}
+.banner.info{background:var(--warn-soft);color:var(--ink)}
+footer{margin:28px 0 40px;font-size:13px;color:var(--muted);max-width:85ch}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <span class="label">IA médicale · 100 % dans ton navigateur</span>
+      <h1><svg width="34" height="22" viewBox="0 0 34 22" aria-hidden="true"><path d="M1 12h8l3-8 4 16 3-12 2 4h12" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Sémio</h1>
+      <p>Cas cliniques, cours, mécanismes et recherche. Le modèle (Gemma 4, open source) tourne sur ton ordinateur : pas d'API, pas de serveur, rien n'est envoyé.</p>
+    </div>
+    <p class="disclaimer">Réservé aux étudiants en médecine, à but pédagogique. Peut se tromper : vérifie toujours dans tes cours et avec ton senior. Ne remplace pas un médecin.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- Modèle -->
+  <section class="modelbar" aria-live="polite">
+    <span class="dot" id="mdot"></span>
+    <div class="mstatus">
+      <strong id="mtitle">Modèle non chargé</strong>
+      <span id="msub">Télécharge le modèle une fois (plusieurs Go), il restera en cache dans ton navigateur.</span>
+      <div class="bar" id="mbar" hidden><i id="mfill"></i></div>
+    </div>
+    <select id="modelId" aria-label="Choix du modèle">
+      <option value="onnx-community/gemma-4-E2B-it-ONNX">Gemma 4 E2B · rapide</option>
+      <option value="onnx-community/gemma-4-E4B-it-ONNX">Gemma 4 E4B · plus précis, plus lourd</option>
+    </select>
+    <button class="btn btn-primary" id="loadBtn">Charger le modèle</button>
+  </section>
+  <div class="banner err" id="gpuWarn" hidden style="margin-top:12px">Ton navigateur ne prend pas en charge WebGPU. Ouvre Sémio sur ordinateur avec Chrome ou Edge à jour.</div>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="cas" aria-selected="true">Cas clinique</button>
+    <button class="tab" role="tab" data-tab="cours" aria-selected="false">Cours</button>
+    <button class="tab" role="tab" data-tab="meca" aria-selected="false">Mécanisme</button>
+    <button class="tab" role="tab" data-tab="rech" aria-selected="false">Recherche</button>
+  </nav>
+
+  <!-- CAS -->
+  <section class="panel" data-panel="cas">
+    <form class="sheet" id="f-cas" autocomplete="off">
+      <h2>Observation</h2>
+      <div class="row">
+        <div class="field"><label for="c-age">Âge</label><input type="number" id="c-age" min="0" max="120"></div>
+        <div class="field"><label for="c-sexe">Sexe</label><select id="c-sexe"><option value="">—</option><option>Homme</option><option>Femme</option></select></div>
+        <div class="field"><label for="c-ctx">Contexte</label><select id="c-ctx"><option>Urgences</option><option>Consultation</option><option>Hospitalisation</option><option>Pédiatrie</option><option>Grossesse</option></select></div>
+      </div>
+      <div class="field"><label for="c-motif">Motif</label><input type="text" id="c-motif"></div>
+      <div class="field"><label for="c-hdm">Histoire de la maladie</label><textarea id="c-hdm" rows="3"></textarea></div>
+      <div class="field"><label for="c-atcd">Antécédents, FDR, traitements</label><textarea id="c-atcd" rows="2"></textarea></div>
+      <div class="row vitals">
+        <div class="field"><label for="c-ta">TA (mmHg)</label><input type="text" id="c-ta" placeholder="120/80"></div>
+        <div class="field"><label for="c-fc">FC (bpm)</label><input type="number" id="c-fc"></div>
+        <div class="field"><label for="c-fr">FR (/min)</label><input type="number" id="c-fr"></div>
+        <div class="field"><label for="c-t">T° (°C)</label><input type="number" id="c-t" step="0.1"></div>
+        <div class="field"><label for="c-spo2">SpO₂ (%)</label><input type="number" id="c-spo2"></div>
+      </div>
+      <div class="field"><label for="c-exam">Examen physique</label><textarea id="c-exam" rows="3"></textarea></div>
+      <div class="field"><label for="c-bio">Résultats (bio, ECG, imagerie)</label><textarea id="c-bio" rows="2"></textarea></div>
+      <div class="actions">
+        <button class="btn btn-primary run" type="submit">Diagnostic et traitement</button>
+        <button class="btn btn-ghost" type="button" id="c-ex">Cas exemple</button>
+        <button class="btn btn-ghost" type="button" id="c-clear">Vider</button>
+      </div>
+    </form>
+    <div class="out" data-out="cas"></div>
+  </section>
+
+  <!-- COURS -->
+  <section class="panel" data-panel="cours" hidden>
+    <form class="sheet" id="f-cours" autocomplete="off">
+      <h2>Explique-moi un cours</h2>
+      <p class="hint">Un sujet, et Sémio rédige un cours structuré : définition, physiopathologie, clinique, diagnostic, traitement, points clés.</p>
+      <div class="field"><label for="co-sujet">Sujet</label><input type="text" id="co-sujet" placeholder="ex. Insuffisance cardiaque"></div>
+      <div class="field"><label for="co-niv">Niveau</label>
+        <select id="co-niv"><option value="1re-2e année (sciences fondamentales)">1re–2e année</option><option value="3e-5e année (externat)" selected>3e–5e année (externat)</option><option value="6e-7e année / internat">6e–7e année / internat</option></select></div>
+      <div class="chips">
+        <button type="button" class="chip" data-fill="co-sujet">Diabète de type 2</button>
+        <button type="button" class="chip" data-fill="co-sujet">Pneumopathie aiguë communautaire</button>
+        <button type="button" class="chip" data-fill="co-sujet">Syndrome néphrotique</button>
+        <button type="button" class="chip" data-fill="co-sujet">Hypersensibilités (Gell et Coombs)</button>
+      </div>
+      <div class="actions"><button class="btn btn-primary run" type="submit">Rédiger le cours</button></div>
+    </form>
+    <div class="out" data-out="cours"></div>
+  </section>
+
+  <!-- MECANISME -->
+  <section class="panel" data-panel="meca" hidden>
+    <form class="sheet" id="f-meca" autocomplete="off">
+      <h2>Comprendre un mécanisme</h2>
+      <p class="hint">Pose un « pourquoi » ou un « comment » : Sémio explique la chaîne physiopathologique étape par étape.</p>
+      <div class="field"><label for="m-q">Question</label><textarea id="m-q" rows="3" placeholder="ex. Pourquoi l'hypokaliémie donne-t-elle des ondes U ?"></textarea></div>
+      <div class="chips">
+        <button type="button" class="chip" data-fill="m-q">Pourquoi la cirrhose donne-t-elle une ascite ?</button>
+        <button type="button" class="chip" data-fill="m-q">Comment l'insuline fait-elle entrer le glucose dans la cellule ?</button>
+        <button type="button" class="chip" data-fill="m-q">Pourquoi l'acidose métabolique entraîne-t-elle une hyperkaliémie ?</button>
+      </div>
+      <div class="actions"><button class="btn btn-primary run" type="submit">Expliquer</button></div>
+    </form>
+    <div class="out" data-out="meca"></div>
+  </section>
+
+  <!-- RECHERCHE -->
+  <section class="panel" data-panel="rech" hidden>
+    <form class="sheet" id="f-rech" autocomplete="off">
+      <h2>Recherche dans la littérature</h2>
+      <p class="hint">Sémio cherche de vrais articles (Europe PMC, qui inclut PubMed), puis résume les résumés en français en citant chaque article.</p>
+      <div class="field"><label for="r-q">Question de recherche</label><textarea id="r-q" rows="3" placeholder="ex. Les SGLT2 réduisent-ils les hospitalisations dans l'insuffisance cardiaque ?"></textarea></div>
+      <div class="field"><label for="r-n">Nombre d'articles</label><select id="r-n"><option>3</option><option selected>5</option><option>8</option></select></div>
+      <div class="actions"><button class="btn btn-primary run" type="submit">Chercher et résumer</button></div>
+    </form>
+    <div class="out" data-out="rech"></div>
+  </section>
+
+  <footer>Sémio utilise Gemma 4 (Google, open source) via Transformers.js et WebGPU. Les réponses sont générées par un petit modèle et peuvent contenir des erreurs, en particulier sur les doses : vérifie dans les recommandations officielles. N'entre aucune donnée permettant d'identifier un patient.</footer>
+</main>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const store = { get(k){ try{ return localStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch{} } };
+
+// ---------- worker / modèle ----------
+const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
+let ready = false, busy = false, current = null;
+const pending = new Map();
+
+function setModelUI(state, title, sub){
+  $("mdot").className = "dot " + (state || "");
+  $("mtitle").textContent = title; if (sub != null) $("msub").textContent = sub;
+}
+const fmtGB = (b) => (b / 1e9).toFixed(2) + " Go";
+
+worker.addEventListener("message", (e) => {
+  const m = e.data;
+  if (m.type === "progress"){
+    $("mbar").hidden = false;
+    const pct = m.total ? Math.min(100, m.loaded / m.total * 100) : 0;
+    $("mfill").style.width = pct.toFixed(1) + "%";
+    setModelUI("loading", "Téléchargement du modèle… " + pct.toFixed(0) + " %", fmtGB(m.loaded) + " / " + fmtGB(m.total) + " (la 1re fois seulement)");
+  } else if (m.type === "status"){
+    setModelUI("loading", m.text, null);
+  } else if (m.type === "ready"){
+    ready = true; $("mbar").hidden = true;
+    const name = $("modelId").selectedOptions[0].textContent;
+    setModelUI("ready", "Modèle prêt · " + name, "Tout tourne sur ton ordinateur. Tu peux même couper Internet (sauf pour la Recherche).");
+    $("loadBtn").textContent = "Changer"; $("loadBtn").disabled = false;
+    store.set("semio-model", $("modelId").value); store.set("semio-loaded", "1");
+    refreshButtons();
+  } else if (m.type === "token"){
+    const p = pending.get(m.id); if (p) p.onToken(m.text, m.tps);
+  } else if (m.type === "done"){
+    const p = pending.get(m.id); if (p){ pending.delete(m.id); p.resolve(m.text); }
+  } else if (m.type === "error"){
+    if (m.id && pending.has(m.id)){ const p = pending.get(m.id); pending.delete(m.id); p.reject(new Error(m.message)); }
+    else { ready = false; setModelUI("err", "Échec du chargement", m.message); $("loadBtn").disabled = false; $("mbar").hidden = true; refreshButtons(); }
+  }
+});
+
+function loadModel(){
+  if (!navigator.gpu){ $("gpuWarn").hidden = false; return; }
+  ready = false; refreshButtons();
+  $("loadBtn").disabled = true;
+  setModelUI("loading", "Connexion…", "Le téléchargement peut prendre plusieurs minutes la première fois.");
+  worker.postMessage({ type: "load", modelId: $("modelId").value });
+}
+$("loadBtn").addEventListener("click", loadModel);
+const savedModel = store.get("semio-model");
+if (savedModel) $("modelId").value = savedModel;
+if (!navigator.gpu) $("gpuWarn").hidden = false;
+else if (store.get("semio-loaded") === "1") loadModel(); // déjà en cache : rechargement rapide
+
+let seq = 0;
+function generate(messages, maxTokens, onToken){
+  const id = ++seq;
+  return new Promise((resolve, reject) => {
+    pending.set(id, { resolve, reject, onToken });
+    worker.postMessage({ type: "generate", id, messages, maxTokens });
+  });
+}
+
+// ---------- prompts ----------
+const SYSTEM = `Tu es Sémio, un médecin enseignant qui forme des étudiants en médecine francophones (Maroc, France). Tu réponds toujours en français, de façon exacte, structurée et pédagogique, en suivant les recommandations actuelles (HAS, ESC, OMS, sociétés savantes).
+Règles :
+- N'invente jamais de chiffre, de dose ou de référence. Si tu n'es pas sûr, écris « à vérifier ».
+- Donne les doses seulement si elles sont standard ; précise « dose usuelle adulte » et rappelle les contre-indications majeures.
+- Utilise des titres « ## » et des listes « - ». Pas de tableaux.
+- Tu t'adresses à des étudiants, jamais à un patient qui chercherait à se soigner seul.`;
+const sys = { role: "system", content: [{ type: "text", text: SYSTEM }] };
+const user = (t) => ({ role: "user", content: [{ type: "text", text: t }] });
+const asst = (t) => ({ role: "assistant", content: [{ type: "text", text: t }] });
+
+const MODULES = {
+  cas: {
+    max: 1400,
+    empty: ["Synthèse syndromique et gravité","Drapeaux rouges","Diagnostics différentiels classés, avec arguments pour et contre","Examens complémentaires hiérarchisés","Traitement initial (avec doses usuelles)","Éléments à compléter à l'interrogatoire"],
+    build(){
+      const v = (id) => $(id).value.trim();
+      if (!v("c-motif") && !v("c-hdm")) throw new Error("Indique au moins le motif ou l'histoire de la maladie.");
+      const vit = [v("c-ta") && "TA " + v("c-ta") + " mmHg", v("c-fc") && "FC " + v("c-fc") + " bpm", v("c-fr") && "FR " + v("c-fr") + "/min", v("c-t") && "T° " + v("c-t") + " °C", v("c-spo2") && "SpO2 " + v("c-spo2") + " %"].filter(Boolean).join(", ");
+      const cas = [
+        `Patient : ${v("c-age") ? v("c-age") + " ans" : "âge non précisé"}, ${v("c-sexe") || "sexe non précisé"}, contexte : ${v("c-ctx")}.`,
+        v("c-motif") && "Motif : " + v("c-motif"),
+        v("c-hdm") && "Histoire : " + v("c-hdm"),
+        v("c-atcd") && "Antécédents / FDR / traitements : " + v("c-atcd"),
+        vit && "Constantes : " + vit,
+        v("c-exam") && "Examen : " + v("c-exam"),
+        v("c-bio") && "Résultats : " + v("c-bio"),
+      ].filter(Boolean).join("\n");
+      return { label: (v("c-motif") || "Cas clinique"), prompt: `Analyse ce cas clinique comme un senior qui corrige un étudiant.
+
+CAS :
+${cas}
+
+Réponds avec exactement ces sections, dans cet ordre :
+## Synthèse syndromique
+(2-3 phrases, puis « Gravité : urgence vitale / urgent / non urgent »)
+## Drapeaux rouges
+## Diagnostics différentiels
+(3 à 5, du plus probable au moins probable ; pour chacun : probabilité élevée/moyenne/faible, arguments pour, arguments contre, en t'appuyant uniquement sur les données du cas ; signale « À NE PAS RATER » pour les urgences)
+## Examens complémentaires
+(classés : immédiat, rapide, différé, avec le but de chaque examen)
+## Traitement initial
+(mesures immédiates puis traitement du diagnostic le plus probable, avec doses usuelles adultes et contre-indications)
+## À compléter
+(questions et éléments d'examen manquants)
+## Point pédagogique
+(un piège classique)` };
+    }
+  },
+  cours: {
+    max: 1700,
+    empty: ["Définition et épidémiologie","Physiopathologie","Clinique et diagnostic","Diagnostics différentiels","Traitement","Points clés à retenir pour l'examen"],
+    build(){
+      const s = $("co-sujet").value.trim(); if (!s) throw new Error("Indique un sujet.");
+      return { label: s, prompt: `Rédige un cours complet sur : « ${s} », pour un étudiant en ${$("co-niv").value}.
+Sections : ## Définition et épidémiologie, ## Physiopathologie (enchaînement des mécanismes), ## Clinique, ## Examens et diagnostic positif, ## Diagnostics différentiels, ## Complications, ## Traitement (objectifs, moyens, indications), ## Points clés pour l'examen (5 à 8 puces), ## 3 QCM d'auto-évaluation (avec la correction à la fin).
+Adapte la profondeur au niveau demandé.` };
+    }
+  },
+  meca: {
+    max: 1100,
+    empty: ["Réponse courte en une phrase","La chaîne de mécanismes étape par étape (A → B → C)","Conséquences cliniques et paracliniques","Un moyen mnémotechnique ou une analogie"],
+    build(){
+      const q = $("m-q").value.trim(); if (!q) throw new Error("Pose une question.");
+      return { label: q, prompt: `Question d'un étudiant : « ${q} »
+Explique le mécanisme. Sections : ## Réponse courte (1-2 phrases), ## Mécanisme étape par étape (liste numérotée, chaque étape mène à la suivante, avec les molécules / récepteurs / canaux en jeu), ## Conséquences cliniques et paracliniques, ## Pour retenir (une analogie ou un moyen mnémotechnique).` };
+    }
+  },
+  rech: {
+    max: 1100,
+    empty: ["Les vrais articles trouvés (titre, revue, année, lien)","Une synthèse en français qui cite chaque article [1], [2]…","Le niveau de preuve et les limites"],
+    build(){ const q = $("r-q").value.trim(); if (!q) throw new Error("Pose une question de recherche."); return { label: q, prompt: q }; }
+  }
+};
+
+// ---------- markdown léger (sans innerHTML) ----------
+function inline(node, s){
+  s.split(/(\*\*[^*]+\*\*|`[^`]+`|\[\d+\])/g).forEach(part => {
+    if (!part) return;
+    if (/^\*\*[^*]+\*\*$/.test(part)) node.append(el("strong", null, part.slice(2, -2)));
+    else if (/^`[^`]+`$/.test(part)) node.append(el("code", null, part.slice(1, -1)));
+    else node.append(document.createTextNode(part.replace(/(^|\s)\*([^*]+)\*/g, "$1$2")));
+  });
+}
+function md(text){
+  const f = document.createDocumentFragment(); let list = null, ltype = null;
+  for (const raw of String(text).split("\n")){
+    const line = raw.replace(/\s+$/, "");
+    let m;
+    if ((m = line.match(/^(#{1,4})\s+(.*)/))){ list = null; const h = el(m[1].length <= 2 ? "h3" : "h4"); inline(h, m[2]); f.append(h); }
+    else if ((m = line.match(/^\s*[-*•]\s+(.*)/)) || (m = line.match(/^\s*(\d+)[.)]\s+(.*)/))){
+      const ord = /^\s*\d/.test(line); const content = ord ? m[2] : m[1];
+      if (!list || ltype !== ord){ list = el(ord ? "ol" : "ul"); ltype = ord; f.append(list); }
+      const li = el("li"); inline(li, content); list.append(li);
+    }
+    else if (line.trim()){ list = null; const p = el("p"); if (/NE PAS RATER|urgence vitale/i.test(line)) p.className = "warnline"; inline(p, line); f.append(p); }
+    else list = null;
+  }
+  return f;
+}
+
+// ---------- panneaux de sortie ----------
+const state = {}; // par module : { history:[], thread, composer }
+function emptyState(key){
+  const out = document.querySelector(`[data-out="${key}"]`); out.replaceChildren();
+  const head = el("div", "out-head"); head.append(el("span", "label", "Réponse"), el("span", "speed")); out.append(head);
+  const e = el("div", "empty"); e.append(document.createTextNode(ready ? "Remplis le formulaire puis lance. Tu obtiendras :" : "Charge d'abord le modèle (en haut), puis remplis le formulaire. Tu obtiendras :"));
+  const ul = el("ul"); MODULES[key].empty.forEach(t => ul.append(el("li", null, t))); e.append(ul); out.append(e);
+  state[key] = { history: [], out };
+}
+Object.keys(MODULES).forEach(emptyState);
+
+function threadFor(key){
+  const s = state[key]; const out = s.out;
+  if (!s.thread){
+    out.querySelector(".empty")?.remove();
+    s.thread = el("div", "thread"); out.append(s.thread);
+    const comp = el("form", "composer");
+    const ta = el("textarea"); ta.rows = 1; ta.placeholder = "Question de suivi sur cette réponse…"; ta.id = "follow-" + key;
+    ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); comp.requestSubmit(); } });
+    const send = el("button", "btn btn-primary btn-sm run", "Envoyer"); send.type = "submit";
+    const stop = el("button", "btn btn-ghost btn-sm stop", "Arrêter"); stop.type = "button"; stop.hidden = true;
+    stop.onclick = () => worker.postMessage({ type: "interrupt" });
+    comp.append(ta, send, stop); out.append(comp);
+    comp.addEventListener("submit", ev => { ev.preventDefault(); const q = ta.value.trim(); if (!q) return; ta.value = ""; ask(key, q, q, MODULES[key].max, true); });
+    s.composer = comp;
+  }
+  return s.thread;
+}
+
+async function ask(key, shown, prompt, maxTokens, followUp){
+  if (!ready || busy) return;
+  busy = true; refreshButtons();
+  const s = state[key]; const thread = threadFor(key);
+  if (!followUp){ s.history = []; thread.replaceChildren(); }
+  thread.append(el("div", "msg u", shown));
+  const a = el("div", "msg a", "Réflexion…"); thread.append(a);
+  s.composer.querySelector(".stop").hidden = false;
+  const speed = s.out.querySelector(".speed");
+  const msgs = [sys, ...s.history.slice(-6), user(prompt)];
+  let last = 0;
+  try{
+    const text = await generate(msgs, maxTokens, (t, tps) => {
+      const now = performance.now(); if (now - last < 80) return; last = now;
+      a.replaceChildren(md(t)); speed.textContent = tps.toFixed(1) + " tokens/s";
+    });
+    a.replaceChildren(md(text || "(pas de réponse)"));
+    s.history.push(user(prompt), asst(text));
+    return text;
+  }catch(err){
+    a.replaceChildren(el("div", "banner err", "Erreur : " + err.message));
+  }finally{
+    busy = false; s.composer.querySelector(".stop").hidden = true; refreshButtons();
+  }
+}
+
+function refreshButtons(){
+  document.querySelectorAll(".run").forEach(b => { b.disabled = !ready || busy; });
+}
+refreshButtons();
+
+// ---------- formulaires ----------
+["cas","cours","meca"].forEach(key => {
+  $("f-" + key).addEventListener("submit", ev => {
+    ev.preventDefault();
+    try{ const { label, prompt } = MODULES[key].build(); ask(key, label, prompt, MODULES[key].max, false); }
+    catch(err){ showFormError(key, err.message); }
+  });
+});
+function showFormError(key, msg){
+  const out = state[key].out; out.querySelector(".banner.err.form")?.remove();
+  const b = el("div", "banner err form", msg); out.prepend(b); setTimeout(() => b.remove(), 4000);
+}
+
+// Recherche : mots-clés -> Europe PMC -> synthèse citée
+$("f-rech").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  let q; try{ q = MODULES.rech.build().prompt; }catch(err){ showFormError("rech", err.message); return; }
+  if (!ready || busy) return;
+  const s = state.rech; const thread = threadFor("rech"); s.history = []; thread.replaceChildren();
+  thread.append(el("div", "msg u", q));
+  const status = el("div", "msg a", "Traduction de la question en mots-clés…"); thread.append(status);
+  busy = true; refreshButtons();
+  let kw = "";
+  try{
+    kw = (await generate([user(`Convert this medical research question into a short English search query for PubMed (4 to 8 keywords, use AND between concepts, no explanation, one line only).\nQuestion: ${q}`)], 40, () => {})).split("\n")[0].replace(/["«»]/g, "").trim();
+  }catch(err){ kw = q; }
+  busy = false;
+  status.textContent = "Recherche d'articles : " + kw;
+  let arts = [];
+  try{
+    const url = "https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&resultType=core&sort=RELEVANCE&pageSize=" + $("r-n").value +
+      "&query=" + encodeURIComponent("(" + kw + ") AND HAS_ABSTRACT:y AND SRC:MED");
+    const r = await fetch(url); if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json(); arts = (j.resultList && j.resultList.result) || [];
+  }catch(err){
+    status.replaceChildren(el("div", "banner err", "Impossible de joindre Europe PMC (connexion Internet ?). " + err.message)); refreshButtons(); return;
+  }
+  if (!arts.length){ status.replaceChildren(el("div", "banner info", "Aucun article trouvé pour « " + kw + " ». Reformule la question.")); refreshButtons(); return; }
+
+  const refs = el("ol", "refs");
+  arts.forEach((a, i) => {
+    const li = el("li"); const link = el("a", null, "[" + (i+1) + "] " + a.title.replace(/<[^>]+>/g, ""));
+    link.href = a.pmid ? "https://pubmed.ncbi.nlm.nih.gov/" + a.pmid + "/" : "https://europepmc.org/article/" + a.source + "/" + a.id;
+    link.target = "_blank"; link.rel = "noopener";
+    li.append(link, el("div", "meta", [a.authorString && a.authorString.split(",").slice(0,3).join(",") + (a.authorString.split(",").length > 3 ? " et al." : ""), a.journalTitle || (a.journalInfo && a.journalInfo.journal && a.journalInfo.journal.title), a.pubYear].filter(Boolean).join(" · ")));
+    refs.append(li);
+  });
+  status.replaceChildren(el("h3", null, "Articles trouvés"), refs);
+
+  const corpus = arts.map((a, i) => `[${i+1}] ${a.title.replace(/<[^>]+>/g,"")} (${a.journalTitle || ""} ${a.pubYear || ""})\nRésumé : ${(a.abstractText || "").replace(/<[^>]+>/g, "").slice(0, 1600)}`).join("\n\n");
+  const prompt = `Question de l'étudiant : « ${q} »
+
+Voici les résumés d'articles scientifiques trouvés :
+
+${corpus}
+
+En te basant UNIQUEMENT sur ces résumés, réponds en français avec : ## Réponse courte, ## Ce que montrent les articles (chaque affirmation suivie de sa référence [n]), ## Niveau de preuve et limites (type d'étude, population, biais). N'ajoute aucun article qui n'est pas dans la liste.`;
+  await askInto("rech", prompt);
+});
+async function askInto(key, prompt){
+  const s = state[key]; const thread = threadFor(key);
+  busy = true; refreshButtons();
+  const a = el("div", "msg a", "Lecture des résumés…"); thread.append(a);
+  s.composer.querySelector(".stop").hidden = false;
+  const speed = s.out.querySelector(".speed"); let last = 0;
+  try{
+    const text = await generate([sys, user(prompt)], MODULES[key].max, (t, tps) => {
+      const now = performance.now(); if (now - last < 80) return; last = now;
+      a.replaceChildren(md(t)); speed.textContent = tps.toFixed(1) + " tokens/s";
+    });
+    a.replaceChildren(md(text)); s.history = [user(prompt), asst(text)];
+  }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
+  finally{ busy = false; s.composer.querySelector(".stop").hidden = true; refreshButtons(); }
+}
+
+// ---------- divers ----------
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t ? "true" : "false"));
+  document.querySelectorAll(".panel").forEach(p => p.hidden = p.dataset.panel !== t.dataset.tab);
+}));
+document.querySelectorAll(".chip[data-fill]").forEach(c => c.addEventListener("click", () => { $(c.dataset.fill).value = c.textContent; }));
+
+const EX = { "c-age":"58", "c-sexe":"Homme", "c-ctx":"Urgences", "c-motif":"Douleur thoracique depuis 1 h",
+  "c-hdm":"Douleur rétrosternale constrictive apparue au repos il y a 1 h, irradiant au bras gauche et à la mâchoire, 8/10, avec sueurs et nausées. Pas de dyspnée, pas de fièvre.",
+  "c-atcd":"Tabac 30 PA, HTA sous amlodipine, diabète de type 2 sous metformine.",
+  "c-ta":"150/90", "c-fc":"98", "c-fr":"20", "c-t":"37.0", "c-spo2":"96",
+  "c-exam":"Anxieux, sueurs profuses. Bruits du cœur réguliers sans souffle, poumons libres, pouls symétriques.",
+  "c-bio":"ECG : sus-décalage du segment ST de 3 mm en DII, DIII, aVF avec miroir en DI, aVL." };
+$("c-ex").addEventListener("click", () => Object.entries(EX).forEach(([k, v]) => $(k).value = v));
+$("c-clear").addEventListener("click", () => { $("f-cas").reset(); });
+Object.entries(EX).forEach(([k, v]) => $(k).value = v); // ouvre sur un cas exemple
+</script>
+</body>
+</html>
