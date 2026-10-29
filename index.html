@@ -276,7 +276,7 @@ dialog.viewer::backdrop{background:rgba(10,15,30,.6)}
     <div class="vbody"><canvas id="v-canvas"></canvas></div>
   </dialog>
 
-  <footer><strong>Sémio</strong> · conçu et développé par YM. Les réponses peuvent contenir des erreurs, en particulier sur les doses : vérifie toujours dans les recommandations officielles. N'entre aucune donnée permettant d'identifier un patient.<br><span style="opacity:.75">Sémio-1 est un modèle affiné par YM à partir de Gemma 4 E2B (licence Apache 2.0), sur MediQAl (CC BY 4.0) et FrenchMedMCQA (Apache 2.0). Exécuté avec wllama (llama.cpp) et WebGPU.</span></footer>
+  <footer><strong>Sémio</strong> · conçu et développé par YM. Les réponses peuvent contenir des erreurs, en particulier sur les doses : vérifie toujours dans les recommandations officielles. N'entre aucune donnée permettant d'identifier un patient.</footer>
 </main>
 
 <script type="module">
@@ -342,12 +342,12 @@ async function generate(messages, maxTokens, onToken){
 }
 
 // ================= Prompts =================
-const SYSTEM = `Tu es Sémio, l'assistant médical créé par YM pour les étudiants en médecine. Tu raisonnes comme un médecin enseignant qui forme des étudiants francophones (Maroc, France). Si on te demande qui tu es ou qui t'a créé, réponds que tu es Sémio, créé par YM. Ne mentionne jamais un autre nom de créateur. Tu réponds toujours en français, de façon exacte, structurée et pédagogique, en suivant les recommandations actuelles (HAS, ESC, OMS, sociétés savantes).
+const SYSTEM = `Tu es Sémio, l'assistant médical créé par YM pour les étudiants en médecine. Tu raisonnes comme un médecin enseignant qui forme des étudiants francophones (Maroc, France). Ne te présente pas et ne parle pas de toi : réponds directement à la question. Seulement si on te demande explicitement qui tu es ou qui t'a créé, réponds que tu es Sémio, créé par YM. Tu réponds toujours en français, de façon exacte, structurée et pédagogique, en suivant les recommandations actuelles (HAS, ESC, OMS, sociétés savantes).
 Règles :
 - N'invente jamais de chiffre, de dose ou de référence. Si tu n'es pas sûr, écris « à vérifier ».
 - Donne les doses seulement si elles sont standard ; précise « dose usuelle adulte » et rappelle les contre-indications majeures.
 - Utilise des titres « ## » et des listes « - ». Pas de tableaux.
-- Si des extraits de livres sont fournis, appuie-toi d'abord sur eux et cite-les sous la forme [Livre, p. X].
+- Si des extraits de livres sont fournis, utilise-les seulement s'ils répondent vraiment à la question (cite-les alors sous la forme [Livre, p. X]) ; sinon ignore-les.
 - Tu t'adresses à des étudiants, jamais à un patient qui chercherait à se soigner seul.`;
 const sys = { role: "system", content: SYSTEM };
 const user = (t) => ({ role: "user", content: t });
@@ -745,7 +745,7 @@ $("chat-form").addEventListener("submit", async ev => {
   if ($("short-chat").checked) full += SHORT;
   if ($("lib-chat").checked && LIB.ready()){
     hits = LIB.search(q, 4);
-    if (hits.length) full = "Extraits de livres (à utiliser si utiles, en les citant) :\n\n" + hits.map(h => `[${h.short}, p. ${h.page}]\n${h.text.slice(0, 800)}`).join("\n\n") + "\n\n---\n\nQuestion : " + full;
+    if (hits.length) full = "Extraits de livres (à utiliser seulement s'ils répondent vraiment à la question) :\n\n" + hits.map(h => `[${h.short}, p. ${h.page}]\n${h.text.slice(0, 800)}`).join("\n\n") + "\n\n---\n\nQuestion : " + full;
   }
   let last = 0;
   try{
