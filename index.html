@@ -120,6 +120,11 @@ dialog.viewer::backdrop{background:rgba(10,15,30,.6)}
 .vhead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .vbody{overflow:auto;max-height:calc(92vh - 60px);padding:10px;text-align:center}
 .vbody canvas{max-width:100%;height:auto;background:#fff}
+.chatwrap{margin-top:18px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-height:420px}
+.chatwrap .thread{flex:1}
+.chatopts{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.chatwrap .composer textarea{min-height:56px}
+.badge{font:600 11px/1 var(--f-body);text-transform:uppercase;letter-spacing:.06em;padding:3px 6px;border-radius:4px;background:var(--ok-soft);color:var(--ok);margin-left:6px}
 </style>
 </head>
 <body>
@@ -146,12 +151,28 @@ dialog.viewer::backdrop{background:rgba(10,15,30,.6)}
   </section>
 
   <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="chat" aria-selected="false">Discussion</button>
     <button class="tab" role="tab" data-tab="cas" aria-selected="true">Cas clinique</button>
     <button class="tab" role="tab" data-tab="cours" aria-selected="false">Cours</button>
     <button class="tab" role="tab" data-tab="meca" aria-selected="false">Mécanisme</button>
     <button class="tab" role="tab" data-tab="rech" aria-selected="false">Recherche</button>
     <button class="tab" role="tab" data-tab="biblio" aria-selected="false">Ma bibliothèque</button>
   </nav>
+
+  <section class="chatwrap" data-panel="chat" hidden>
+    <div class="out-head"><span class="label">Discussion avec Sémio</span><span class="speed" id="chat-speed"></span></div>
+    <div class="thread" id="chat-thread"><div class="empty">Pose n'importe quelle question de médecine : un cours, un doute, un cas, une révision. Sémio garde le fil de la conversation, comme un tuteur.</div></div>
+    <div class="chatopts">
+      <label class="chk"><input type="checkbox" class="uselib" id="lib-chat"> Utiliser la bibliothèque</label>
+      <label class="chk"><input type="checkbox" id="short-chat"> Réponses courtes (plus rapide)</label>
+      <button class="btn btn-ghost btn-sm" type="button" id="chat-new">Nouvelle discussion</button>
+    </div>
+    <form class="composer" id="chat-form" autocomplete="off">
+      <textarea id="chat-in" rows="2" placeholder="Écris ta question… (Entrée pour envoyer, Maj+Entrée pour aller à la ligne)"></textarea>
+      <button class="btn btn-primary run" type="submit">Envoyer</button>
+      <button class="btn btn-ghost stop" type="button" id="chat-stop" hidden>Arrêter</button>
+    </form>
+  </section>
 
   <section class="panel" data-panel="cas">
     <form class="sheet" id="f-cas" autocomplete="off">
@@ -224,7 +245,7 @@ dialog.viewer::backdrop{background:rgba(10,15,30,.6)}
   <section class="panel" data-panel="rech" hidden>
     <form class="sheet" id="f-rech" autocomplete="off">
       <h2>Recherche dans la littérature</h2>
-      <p class="hint">Sémio cherche de vrais articles (Europe PMC, qui inclut PubMed), puis résume les résumés en français en citant chaque article.</p>
+      <p class="hint">Sémio cherche de vrais articles sur PubMed, puis résume leurs résumés en français en citant chaque article.</p>
       <div class="field"><label for="r-q">Question de recherche</label><textarea id="r-q" rows="3" placeholder="ex. Les SGLT2 réduisent-ils les hospitalisations dans l'insuffisance cardiaque ?"></textarea></div>
       <div class="field"><label for="r-n">Nombre d'articles</label><select id="r-n"><option>3</option><option selected>5</option><option>8</option></select></div>
       <div class="actions"><button class="btn btn-primary run" type="submit">Chercher et résumer</button></div>
@@ -235,7 +256,7 @@ dialog.viewer::backdrop{background:rgba(10,15,30,.6)}
   <section class="panel" data-panel="biblio" hidden>
     <div class="sheet">
       <h2>Ma bibliothèque privée</h2>
-      <p class="hint">Ajoute tes livres en PDF. Ils restent <strong>uniquement dans ce navigateur</strong>, sur ton ordinateur : rien n'est envoyé ni publié. Sémio peut ensuite chercher dedans et citer la page.</p>
+      <p class="hint">Ajoute tes livres en PDF. Ils restent <strong>uniquement dans ce navigateur</strong>, sur ton ordinateur : rien n'est envoyé ni publié. Sémio peut ensuite chercher dedans et citer la page. La <strong>bibliothèque commune</strong> (manuels libres de droits) est disponible pour tout le monde.</p>
       <div class="field"><label for="b-files">Ajouter des PDF</label><input type="file" id="b-files" accept="application/pdf" multiple></div>
       <div class="banner info" id="b-status" hidden></div>
       <ul class="books" id="b-list"></ul>
@@ -488,7 +509,31 @@ function showFormError(key, msg){
   const b = el("div", "banner err form", msg); out.prepend(b); setTimeout(() => b.remove(), 4000);
 }
 
-// ================= Recherche Europe PMC =================
+// ================= Recherche PubMed (Europe PMC en secours) =================
+async function searchPubMed(term, n){
+  const E = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
+  const r = await fetch(E + "esearch.fcgi?db=pubmed&retmode=json&sort=relevance&retmax=" + n + "&term=" + encodeURIComponent(term + " AND hasabstract"));
+  if (!r.ok) throw new Error("PubMed HTTP " + r.status);
+  const ids = (await r.json()).esearchresult?.idlist || [];
+  if (!ids.length) return [];
+  const x = await fetch(E + "efetch.fcgi?db=pubmed&retmode=xml&id=" + ids.join(","));
+  if (!x.ok) throw new Error("PubMed HTTP " + x.status);
+  const doc = new DOMParser().parseFromString(await x.text(), "text/xml");
+  return [...doc.querySelectorAll("PubmedArticle")].map(a => ({
+    pmid: a.querySelector("MedlineCitation > PMID")?.textContent,
+    title: a.querySelector("ArticleTitle")?.textContent || "",
+    abstractText: [...a.querySelectorAll("Abstract AbstractText")].map(t => (t.getAttribute("Label") ? t.getAttribute("Label") + " : " : "") + t.textContent).join(" "),
+    journalTitle: a.querySelector("Journal > Title")?.textContent || "",
+    pubYear: a.querySelector("JournalIssue PubDate Year")?.textContent || (a.querySelector("JournalIssue PubDate MedlineDate")?.textContent || "").slice(0, 4),
+    authorString: [...a.querySelectorAll("AuthorList > Author")].map(au => [au.querySelector("LastName")?.textContent, au.querySelector("Initials")?.textContent].filter(Boolean).join(" ")).filter(Boolean).join(", "),
+  }));
+}
+async function searchEPMC(term, n){
+  const url = "https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&resultType=core&sort=RELEVANCE&pageSize=" + n + "&query=" + encodeURIComponent("(" + term + ") AND HAS_ABSTRACT:y AND SRC:MED");
+  const r = await fetch(url); if (!r.ok) throw new Error("Europe PMC HTTP " + r.status);
+  return ((await r.json()).resultList?.result) || [];
+}
+
 $("f-rech").addEventListener("submit", async ev => {
   ev.preventDefault();
   let q; try{ q = MODULES.rech.build().prompt; }catch(err){ showFormError("rech", err.message); return; }
@@ -501,12 +546,9 @@ $("f-rech").addEventListener("submit", async ev => {
   try{ kw = (await generate([user(`Convert this medical research question into a short English search query for PubMed (4 to 8 keywords, use AND between concepts, no explanation, one line only).\nQuestion: ${q}`)], 40, () => {})).split("\n")[0].replace(/["«»*]/g, "").trim(); }catch(err){ kw = q; }
   busy = false; status.textContent = "Recherche d'articles : " + kw;
   let arts = [];
-  try{
-    const url = "https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&resultType=core&sort=RELEVANCE&pageSize=" + $("r-n").value + "&query=" + encodeURIComponent("(" + kw + ") AND HAS_ABSTRACT:y AND SRC:MED");
-    const r = await fetch(url); if (!r.ok) throw new Error("HTTP " + r.status);
-    arts = ((await r.json()).resultList?.result) || [];
-  }catch(err){ status.replaceChildren(el("div", "banner err", "Impossible de joindre Europe PMC (connexion Internet ?). " + err.message)); refreshButtons(); return; }
-  if (!arts.length){ status.replaceChildren(el("div", "banner info", "Aucun article trouvé pour « " + kw + " ». Reformule la question.")); refreshButtons(); return; }
+  try{ arts = await searchPubMed(kw, +$("r-n").value); if (!arts.length && kw !== q) arts = await searchPubMed(q, +$("r-n").value); }
+  catch(err){ try{ arts = await searchEPMC(kw, +$("r-n").value); }catch(e2){ status.replaceChildren(el("div", "banner err", "Impossible de joindre PubMed ni Europe PMC. Réessaie dans quelques minutes. (" + err.message + ")")); refreshButtons(); return; } }
+  if (!arts.length){ status.replaceChildren(el("div", "banner info", "Aucun article trouvé pour « " + kw + " ». Reformule la question (en anglais si possible).")); refreshButtons(); return; }
   const refs = el("ol", "refs");
   arts.forEach((a, i) => {
     const li = el("li"); const link = el("a", null, "[" + (i+1) + "] " + a.title.replace(/<[^>]+>/g, ""));
@@ -530,8 +572,13 @@ $("f-rech").addEventListener("submit", async ev => {
 });
 
 // ================= Ma bibliothèque (IndexedDB + pdf.js + BM25) =================
+const SHARED = [
+  { id: "shared:openstax-ap2e", name: "OpenStax – Anatomy and Physiology 2e (CC BY 4.0)",
+    json: "https://huggingface.co/datasets/Medwebsite/semio-bibliotheque/resolve/main/openstax-ap2e.json",
+    pdf: "https://huggingface.co/datasets/Medwebsite/semio-bibliotheque/resolve/main/openstax-ap2e.pdf" },
+];
 const LIB = (() => {
-  let db = null, books = [], docs = [], index = null;
+  let db = null, books = [], docs = [], index = null, shared = [];
   const open = () => new Promise((res, rej) => {
     const r = indexedDB.open("semio-lib", 1);
     r.onupgradeneeded = () => { const d = r.result; d.createObjectStore("books", { keyPath: "id" }); d.createObjectStore("files"); d.createObjectStore("pages", { keyPath: "bookId" }); };
@@ -556,6 +603,22 @@ const LIB = (() => {
     for (const b of books){
       const p = await tx("pages", "readonly", s => s.get(b.id));
       (p?.pages || []).forEach((text, i) => { if (text) docs.push({ bookId: b.id, book: b.name, short: shortName(b.name), page: i + 1, text }); });
+    }
+    build(); render();
+    loadShared();
+  }
+  async function loadShared(){
+    for (const sb of SHARED){
+      try{
+        let p = await tx("pages", "readonly", s => s.get(sb.id));
+        if (!p){
+          const r = await fetch(sb.json); if (!r.ok) continue;
+          const j = await r.json(); p = { bookId: sb.id, pages: j.pages || [] };
+          await tx("pages", "readwrite", s => s.put(p));
+        }
+        shared.push({ ...sb, pages: p.pages.length, withText: p.pages.filter(t => t && t.length > 40).length, shared: true });
+        p.pages.forEach((text, i) => { if (text) docs.push({ bookId: sb.id, book: sb.name, short: "OpenStax A&P", page: i + 1, text }); });
+      }catch(e){ /* bibliothèque commune indisponible : on continue sans */ }
     }
     build(); render();
   }
@@ -608,24 +671,35 @@ const LIB = (() => {
   function status(t){ const b = $("b-status"); b.hidden = !t; b.textContent = t || ""; }
   function render(){
     const ul = $("b-list"); ul.replaceChildren();
-    if (!books.length){ ul.append(el("li", "empty", "Aucun livre pour l'instant.")); }
+    for (const b of shared){
+      const li = el("li"); const info = el("div"); const nm = el("div", "bname", b.name); nm.append(el("span", "badge", "commune"));
+      info.append(nm, el("div", "bmeta", `${b.pages} pages · disponible pour tous les utilisateurs`)); li.append(info); ul.append(li);
+    }
+    if (!books.length){ ul.append(el("li", "empty", "Aucun livre personnel pour l'instant.")); }
     for (const b of books){
       const li = el("li"); const info = el("div"); info.append(el("div", "bname", b.name), el("div", "bmeta", `${b.pages} pages · ${b.withText} avec du texte` + (b.withText < b.pages * 0.2 ? " · scan (OCR nécessaire)" : "")));
       const del = el("button", "btn btn-ghost btn-sm", "Retirer"); del.type = "button";
       del.onclick = () => { if (del.dataset.c){ remove(b.id); } else { del.dataset.c = 1; del.textContent = "Confirmer ?"; setTimeout(() => { del.dataset.c = ""; del.textContent = "Retirer"; }, 3000); } };
       li.append(info, del); ul.append(li);
     }
-    document.querySelectorAll(".uselib").forEach(c => { c.disabled = !books.length; if (!books.length) c.checked = false; });
+    const any = docs.length > 0;
+    document.querySelectorAll(".uselib").forEach(c => { c.disabled = !any; if (!any) c.checked = false; else if (!c.dataset.touched) c.checked = true; });
   }
   async function file(id){ return tx("files", "readonly", s => s.get(id)); }
-  return { init, add, search, file, ready: () => docs.length > 0, status };
+  const sharedPdf = (id) => SHARED.find(x => x.id === id)?.pdf;
+  return { init, add, search, file, sharedPdf, ready: () => docs.length > 0, status };
 })();
 
 // Visionneuse de pages
 let vDoc = null, vPage = 1, vBook = null;
 async function openPage(bookId, name, page){
   const dlg = $("viewer");
-  if (vBook !== bookId){ const blob = await LIB.file(bookId); vDoc = await pdfjsLib.getDocument({ data: await blob.arrayBuffer() }).promise; vBook = bookId; }
+  if (vBook !== bookId){
+    const url = LIB.sharedPdf(bookId);
+    if (url){ $("v-title").textContent = "Chargement de la page…"; if (!dlg.open) dlg.showModal(); vDoc = await pdfjsLib.getDocument({ url, disableAutoFetch: true }).promise; }
+    else { const blob = await LIB.file(bookId); vDoc = await pdfjsLib.getDocument({ data: await blob.arrayBuffer() }).promise; }
+    vBook = bookId;
+  }
   vPage = page; $("v-title").textContent = `${name} · p. ${page}`;
   if (!dlg.open) dlg.showModal();
   const pg = await vDoc.getPage(page); const vp = pg.getViewport({ scale: 1.6 });
@@ -650,10 +724,45 @@ $("b-search").addEventListener("submit", (e) => {
 });
 LIB.init().catch(err => LIB.status("Bibliothèque indisponible dans ce navigateur : " + err.message));
 
+// ================= Discussion =================
+const chat = { history: [] };
+document.querySelectorAll(".uselib").forEach(c => c.addEventListener("change", () => { c.dataset.touched = 1; }));
+$("chat-in").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); $("chat-form").requestSubmit(); } });
+$("chat-new").onclick = () => { chat.history = []; $("chat-thread").replaceChildren(el("div", "empty", "Nouvelle discussion. Pose ta question.")); };
+$("chat-stop").onclick = () => ctl?.abort();
+$("chat-form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const q = $("chat-in").value.trim(); if (!q) return;
+  const th = $("chat-thread");
+  if (!ready){ th.querySelector(".empty")?.remove(); th.append(el("div", "banner info", "Charge d'abord Sémio-1 avec le bouton en haut de la page.")); return; }
+  if (busy) return;
+  $("chat-in").value = ""; busy = true; refreshButtons(); $("chat-stop").hidden = false;
+  th.querySelector(".empty")?.remove();
+  th.append(el("div", "msg u", q));
+  const a = el("div", "msg a", "Réflexion…"); th.append(a); a.scrollIntoView({ block: "end" });
+  let full = q, hits = [];
+  if ($("short-chat").checked) full += SHORT;
+  if ($("lib-chat").checked && LIB.ready()){
+    hits = LIB.search(q, 4);
+    if (hits.length) full = "Extraits de livres (à utiliser si utiles, en les citant) :\n\n" + hits.map(h => `[${h.short}, p. ${h.page}]\n${h.text.slice(0, 800)}`).join("\n\n") + "\n\n---\n\nQuestion : " + full;
+  }
+  let last = 0;
+  try{
+    const text = await generate([sys, ...chat.history.slice(-10), user(full)], $("short-chat").checked ? 350 : 900, (t, tps) => {
+      const now = performance.now(); if (now - last < 80) return; last = now;
+      a.replaceChildren(md(t)); $("chat-speed").textContent = tps.toFixed(1) + " tokens/s";
+    });
+    a.replaceChildren(md(text || "(pas de réponse)"));
+    if (hits.length){ const box = el("div", "srcs"); box.append(el("span", "label", "Pages consultées :")); hits.forEach(h => box.append(pageButton(h))); a.append(box); }
+    chat.history.push(user(q), asst(text));
+  }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
+  finally{ busy = false; $("chat-stop").hidden = true; refreshButtons(); }
+});
+
 // ================= Divers =================
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t ? "true" : "false"));
-  document.querySelectorAll(".panel").forEach(p => p.hidden = p.dataset.panel !== t.dataset.tab);
+  document.querySelectorAll("[data-panel]").forEach(p => p.hidden = p.dataset.panel !== t.dataset.tab);
 }));
 document.querySelectorAll(".chip[data-fill]").forEach(c => c.addEventListener("click", () => { $(c.dataset.fill).value = c.textContent; }));
 const EX = { "c-age":"58", "c-sexe":"Homme", "c-ctx":"Urgences", "c-motif":"Douleur thoracique depuis 1 h",
