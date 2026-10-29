@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sémio — IA médicale locale</title>
-<meta name="description" content="IA médicale pour étudiants qui tourne entièrement dans ton navigateur : cas cliniques, cours, mécanismes, recherche.">
+<title>Sémio — l'IA médicale des étudiants</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect width='34' height='34' rx='8' fill='%23c9365a'/%3E%3Cpath d='M3 18h7l3-8 4 16 3-12 2 4h9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<meta name="description" content="Sémio, l'IA médicale créée par Yahya pour les étudiants en médecine : cas cliniques, cours, mécanismes, recherche. Elle tourne entièrement dans ton navigateur.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
@@ -112,7 +113,7 @@ footer{margin:28px 0 40px;font-size:13px;color:var(--muted);max-width:85ch}
     <div class="brand">
       <span class="label">IA médicale · 100 % dans ton navigateur</span>
       <h1><svg width="34" height="22" viewBox="0 0 34 22" aria-hidden="true"><path d="M1 12h8l3-8 4 16 3-12 2 4h12" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Sémio</h1>
-      <p>Cas cliniques, cours, mécanismes et recherche. Le modèle (Gemma 4, open source) tourne sur ton ordinateur : pas d'API, pas de serveur, rien n'est envoyé.</p>
+      <p>Cas cliniques, cours, mécanismes et recherche. Le modèle Sémio-1 tourne directement sur ton ordinateur : pas de serveur, rien n'est envoyé.</p>
     </div>
     <p class="disclaimer">Réservé aux étudiants en médecine, à but pédagogique. Peut se tromper : vérifie toujours dans tes cours et avec ton senior. Ne remplace pas un médecin.</p>
   </div>
@@ -128,8 +129,8 @@ footer{margin:28px 0 40px;font-size:13px;color:var(--muted);max-width:85ch}
       <div class="bar" id="mbar" hidden><i id="mfill"></i></div>
     </div>
     <select id="modelId" aria-label="Choix du modèle">
-      <option value="onnx-community/gemma-4-E2B-it-ONNX">Gemma 4 E2B · rapide</option>
-      <option value="onnx-community/gemma-4-E4B-it-ONNX">Gemma 4 E4B · plus précis, plus lourd</option>
+      <option value="onnx-community/gemma-4-E2B-it-ONNX">Sémio-1 Rapide</option>
+      <option value="onnx-community/gemma-4-E4B-it-ONNX">Sémio-1 Pro · plus précis, plus lourd</option>
     </select>
     <button class="btn btn-primary" id="loadBtn">Charger le modèle</button>
   </section>
@@ -219,7 +220,7 @@ footer{margin:28px 0 40px;font-size:13px;color:var(--muted);max-width:85ch}
     <div class="out" data-out="rech"></div>
   </section>
 
-  <footer>Sémio utilise Gemma 4 (Google, open source) via Transformers.js et WebGPU. Les réponses sont générées par un petit modèle et peuvent contenir des erreurs, en particulier sur les doses : vérifie dans les recommandations officielles. N'entre aucune donnée permettant d'identifier un patient.</footer>
+  <footer><strong>Sémio</strong> · conçu et développé par Yahya. Les réponses peuvent contenir des erreurs, en particulier sur les doses : vérifie toujours dans les recommandations officielles. N'entre aucune donnée permettant d'identifier un patient.<br><span style="opacity:.75">Sémio-1 est construit sur le modèle open source Gemma 4 (licence Apache 2.0), exécuté avec Transformers.js et WebGPU.</span></footer>
 </main>
 
 <script type="module">
@@ -287,7 +288,7 @@ function generate(messages, maxTokens, onToken){
 }
 
 // ---------- prompts ----------
-const SYSTEM = `Tu es Sémio, un médecin enseignant qui forme des étudiants en médecine francophones (Maroc, France). Tu réponds toujours en français, de façon exacte, structurée et pédagogique, en suivant les recommandations actuelles (HAS, ESC, OMS, sociétés savantes).
+const SYSTEM = `Tu es Sémio, l'assistant médical créé par Yahya pour les étudiants en médecine. Tu raisonnes comme un médecin enseignant qui forme des étudiants francophones (Maroc, France). Si on te demande qui tu es ou qui t'a créé, réponds que tu es Sémio, créé par Yahya. Tu réponds toujours en français, de façon exacte, structurée et pédagogique, en suivant les recommandations actuelles (HAS, ESC, OMS, sociétés savantes).
 Règles :
 - N'invente jamais de chiffre, de dose ou de référence. Si tu n'es pas sûr, écris « à vérifier ».
 - Donne les doses seulement si elles sont standard ; précise « dose usuelle adulte » et rappelle les contre-indications majeures.
