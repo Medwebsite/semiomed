@@ -331,7 +331,7 @@ async function generate(messages, maxTokens, onToken){
   ctl = new AbortController();
   let text = "", n = 0; const t0 = performance.now();
   await wllama.createChatCompletion({
-    messages, max_tokens: maxTokens, temperature: 0.2, top_p: 0.9, stream: true, abortSignal: ctl.signal,
+    messages, max_tokens: maxTokens, temperature: 0.2, top_p: 0.9, stream: true, abortSignal: ctl.signal, chat_template_kwargs: { enable_thinking: false },
     onData: (chunk) => {
       const d = chunk.choices?.[0]?.delta?.content; if (!d) return;
       text += d; n++; const s = (performance.now() - t0) / 1000; onToken(text, s > 0 ? n / s : 0);
