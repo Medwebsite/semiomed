@@ -144,11 +144,16 @@ dialog.viewer::backdrop{background:rgba(10,15,30,.6)}
   <section class="modelbar" aria-live="polite">
     <span class="dot" id="mdot"></span>
     <div class="mstatus">
-      <strong id="mtitle">Sémio-1 non chargé</strong>
-      <span id="msub">Télécharge le modèle une fois (environ 3 Go), il restera en cache dans ton navigateur.</span>
+      <strong id="mtitle">Sémio</strong>
+      <span id="msub"></span>
       <div class="bar" id="mbar" hidden><i id="mfill"></i></div>
     </div>
-    <button class="btn btn-primary" id="loadBtn">Charger Sémio-1</button>
+    <select id="engine" aria-label="Moteur de Sémio">
+      <option value="pro">Sémio-Pro · rapide, en ligne</option>
+      <option value="semio2">Sémio-2 · mon modèle, en ligne</option>
+      <option value="local">Sémio-1 · hors ligne (sur ton PC)</option>
+    </select>
+    <button class="btn btn-ghost" id="loadBtn" hidden>Charger Sémio-1 hors ligne</button>
   </section>
 
   <nav class="tabs" role="tablist">
@@ -292,7 +297,24 @@ const store = { get(k){ try{ return localStorage.getItem(k); }catch{ return null
 
 // ================= Modèle (wllama) =================
 const wllama = new Wllama({ default: "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.8.1/esm/wasm/wllama.wasm" });
-let ready = false, busy = false, ctl = null;
+let ready = false, busy = false, ctl = null, localReady = false;
+const API_URL = "https://semio-api.lamziouaq54.workers.dev/";
+let engine = store.get("semio-engine") || "pro";
+$("engine").value = engine;
+function updateEngineUI(){
+  if (engine === "local"){
+    if (localReady) setModelUI("ready", "Sémio-1 prêt · hors ligne", "Tout tourne sur ton ordinateur (plus lent, mais sans Internet).");
+    else setModelUI("", "Sémio-1 hors ligne non chargé", "Télécharge le modèle une fois (environ 3 Go) avec le bouton à droite.");
+    $("loadBtn").hidden = localReady;
+  } else {
+    if (!API_URL) setModelUI("err", "Serveur Sémio en cours d'installation", "En attendant, choisis « Sémio-1 · hors ligne ».");
+    else setModelUI("ready", engine === "pro" ? "Sémio-Pro prêt · rapide" : "Sémio-2 prêt · ton modèle", "Réponses en quelques secondes." + (localReady ? " Sémio-1 hors ligne est prêt en secours." : ""));
+    $("loadBtn").hidden = true;
+  }
+  ready = engine === "local" ? localReady : !!API_URL;
+  refreshButtons();
+}
+$("engine").addEventListener("change", () => { engine = $("engine").value; store.set("semio-engine", engine); updateEngineUI(); });
 function setModelUI(state, title, sub){ $("mdot").className = "dot " + (state || ""); $("mtitle").textContent = title; if (sub != null) $("msub").textContent = sub; }
 const fmtGB = (b) => (b / 1e9).toFixed(2) + " Go";
 
@@ -305,7 +327,7 @@ async function modelUrl(){
   return `https://huggingface.co/${HF_REPO}/resolve/main/${first}`;
 }
 async function loadModel(){
-  $("loadBtn").disabled = true; ready = false; refreshButtons();
+  $("loadBtn").disabled = true;
   setModelUI("loading", "Connexion…", "Le téléchargement peut prendre plusieurs minutes la première fois.");
   try{
     const url = await modelUrl();
@@ -317,19 +339,45 @@ async function loadModel(){
         setModelUI("loading", "Téléchargement de Sémio-1… " + pct.toFixed(0) + " %", fmtGB(loaded) + " / " + fmtGB(total) + " (la 1re fois seulement)");
       },
     });
-    ready = true; $("mbar").hidden = true; store.set("semio-loaded", "1");
-    setModelUI("ready", "Sémio-1 prêt" + (wllama.isSupportWebGPU() ? " · carte graphique (WebGPU)" : " · processeur"), "Tout tourne sur ton ordinateur. Tu peux même couper Internet (sauf pour la Recherche).");
-    $("loadBtn").hidden = true;
+    localReady = true; $("mbar").hidden = true; store.set("semio-loaded", "1");
   }catch(err){
-    setModelUI("err", "Échec du chargement", err.message); $("loadBtn").disabled = false; $("mbar").hidden = true;
+    setModelUI("err", "Échec du chargement de Sémio-1", err.message); $("loadBtn").disabled = false; $("mbar").hidden = true; return;
   }
-  refreshButtons();
+  updateEngineUI();
 }
 $("loadBtn").addEventListener("click", loadModel);
-if (store.get("semio-loaded") === "1") loadModel();
+updateEngineUI();
+if (engine === "local" && store.get("semio-loaded") === "1") loadModel();
 
+async function genRemote(messages, maxTokens, onToken){
+  let text = "", n = 0, buf = ""; const t0 = performance.now();
+  const r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: engine, messages, max_tokens: maxTokens }), signal: ctl.signal });
+  if (!r.ok) throw new Error("Serveur Sémio : " + r.status + " " + (await r.text()).slice(0, 200));
+  const reader = r.body.getReader(); const dec = new TextDecoder();
+  try{
+    while (true){
+      const { value, done } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n"); buf = lines.pop();
+      for (const line of lines){
+        const l = line.trim(); if (!l.startsWith("data:")) continue;
+        const d = l.slice(5).trim(); if (!d || d === "[DONE]") continue;
+        let j; try{ j = JSON.parse(d); }catch{ continue; }
+        const piece = j.response ?? j.choices?.[0]?.delta?.content ?? "";
+        if (!piece) continue;
+        text += piece; n++; const s = (performance.now() - t0) / 1000; onToken(text, s > 0 ? n / s : 0);
+      }
+    }
+  }catch(e){ if (e?.name !== "AbortError") throw e; }
+  return text;
+}
 async function generate(messages, maxTokens, onToken){
   ctl = new AbortController();
+  if (engine !== "local" && API_URL){
+    try{ return await genRemote(messages, maxTokens, onToken); }
+    catch(e){ if (e?.name === "AbortError") return ""; if (!localReady) throw e; }
+  }
+  if (!localReady) throw new Error("Aucun moteur disponible : choisis Sémio-1 hors ligne et charge-le.");
   let text = "", n = 0; const t0 = performance.now();
   await wllama.createChatCompletion({
     messages, max_tokens: maxTokens, temperature: 0.2, top_p: 0.9, stream: true, abortSignal: ctl.signal, chat_template_kwargs: { enable_thinking: false },
