@@ -584,7 +584,7 @@ const LIB = (() => {
     r.onupgradeneeded = () => { const d = r.result; d.createObjectStore("books", { keyPath: "id" }); d.createObjectStore("files"); d.createObjectStore("pages", { keyPath: "bookId" }); };
     r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
   });
-  const tx = (store, mode, fn) => new Promise((res, rej) => { const t = db.transaction(store, mode); const out = fn(t.objectStore(store)); t.oncomplete = () => res(out?.result ?? out); t.onerror = () => rej(t.error); });
+  const tx = (store, mode, fn) => new Promise((res, rej) => { const t = db.transaction(store, mode); const out = fn(t.objectStore(store)); t.oncomplete = () => res(out instanceof IDBRequest ? out.result : out); t.onerror = () => rej(t.error); });
   const reqP = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
   const norm = (s) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
   const STOP = new Set("le la les de des du un une et ou en au aux a d l par pour sur dans avec est sont qui que quoi the of and to in is for on with by an as at from".split(" "));
