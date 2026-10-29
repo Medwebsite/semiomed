@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sémio — l'IA médicale des étudiants</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect width='34' height='34' rx='8' fill='%23c9365a'/%3E%3Cpath d='M3 18h7l3-8 4 16 3-12 2 4h9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<meta name="description" content="Sémio, l'IA médicale créée par Yahya pour les étudiants en médecine : cas cliniques, cours, mécanismes, recherche. Elle tourne entièrement dans ton navigateur.">
+<meta name="description" content="Sémio, l'IA médicale créée par YM pour les étudiants en médecine : cas cliniques, cours, mécanismes, recherche. Elle tourne entièrement dans ton navigateur.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
@@ -105,6 +105,21 @@ textarea{resize:vertical}
 .banner.info{background:var(--warn-soft);color:var(--ink)}
 footer{margin:28px 0 40px;font-size:13px;color:var(--muted);max-width:85ch}
 [hidden]{display:none!important}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px}
+.books{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.books li{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.books .bname{font-weight:700;min-width:0;overflow-wrap:anywhere}
+.books .bmeta{font-size:13px;color:var(--muted)}
+.hits{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.hits li{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--paper);display:flex;flex-direction:column;gap:6px}
+.hits .src{font-size:13px;font-weight:700;color:var(--accent)}
+.hits .snip{font-size:14px;color:var(--ink)}
+.srcs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+dialog.viewer{border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);padding:0;width:min(900px,96vw);max-height:92vh}
+dialog.viewer::backdrop{background:rgba(10,15,30,.6)}
+.vhead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.vbody{overflow:auto;max-height:calc(92vh - 60px);padding:10px;text-align:center}
+.vbody canvas{max-width:100%;height:auto;background:#fff}
 </style>
 </head>
 <body>
@@ -113,37 +128,31 @@ footer{margin:28px 0 40px;font-size:13px;color:var(--muted);max-width:85ch}
     <div class="brand">
       <span class="label">IA médicale · 100 % dans ton navigateur</span>
       <h1><svg width="34" height="22" viewBox="0 0 34 22" aria-hidden="true"><path d="M1 12h8l3-8 4 16 3-12 2 4h12" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Sémio</h1>
-      <p>Cas cliniques, cours, mécanismes et recherche. Le modèle Sémio-1 tourne directement sur ton ordinateur : pas de serveur, rien n'est envoyé.</p>
+      <p>Cas cliniques, cours, mécanismes, recherche et ta bibliothèque privée. Le modèle Sémio-1 tourne directement sur ton ordinateur : pas de serveur, rien n'est envoyé.</p>
     </div>
     <p class="disclaimer">Réservé aux étudiants en médecine, à but pédagogique. Peut se tromper : vérifie toujours dans tes cours et avec ton senior. Ne remplace pas un médecin.</p>
   </div>
 </header>
 
 <main class="wrap">
-  <!-- Modèle -->
   <section class="modelbar" aria-live="polite">
     <span class="dot" id="mdot"></span>
     <div class="mstatus">
-      <strong id="mtitle">Modèle non chargé</strong>
-      <span id="msub">Télécharge le modèle une fois (plusieurs Go), il restera en cache dans ton navigateur.</span>
+      <strong id="mtitle">Sémio-1 non chargé</strong>
+      <span id="msub">Télécharge le modèle une fois (environ 3 Go), il restera en cache dans ton navigateur.</span>
       <div class="bar" id="mbar" hidden><i id="mfill"></i></div>
     </div>
-    <select id="modelId" aria-label="Choix du modèle">
-      <option value="onnx-community/gemma-4-E2B-it-ONNX">Sémio-1 Rapide</option>
-      <option value="onnx-community/gemma-4-E4B-it-ONNX">Sémio-1 Pro · plus précis, plus lourd</option>
-    </select>
-    <button class="btn btn-primary" id="loadBtn">Charger le modèle</button>
+    <button class="btn btn-primary" id="loadBtn">Charger Sémio-1</button>
   </section>
-  <div class="banner err" id="gpuWarn" hidden style="margin-top:12px">Ton navigateur ne prend pas en charge WebGPU. Ouvre Sémio sur ordinateur avec Chrome ou Edge à jour.</div>
 
   <nav class="tabs" role="tablist">
     <button class="tab" role="tab" data-tab="cas" aria-selected="true">Cas clinique</button>
     <button class="tab" role="tab" data-tab="cours" aria-selected="false">Cours</button>
     <button class="tab" role="tab" data-tab="meca" aria-selected="false">Mécanisme</button>
     <button class="tab" role="tab" data-tab="rech" aria-selected="false">Recherche</button>
+    <button class="tab" role="tab" data-tab="biblio" aria-selected="false">Ma bibliothèque</button>
   </nav>
 
-  <!-- CAS -->
   <section class="panel" data-panel="cas">
     <form class="sheet" id="f-cas" autocomplete="off">
       <h2>Observation</h2>
@@ -164,6 +173,8 @@ footer{margin:28px 0 40px;font-size:13px;color:var(--muted);max-width:85ch}
       </div>
       <div class="field"><label for="c-exam">Examen physique</label><textarea id="c-exam" rows="3"></textarea></div>
       <div class="field"><label for="c-bio">Résultats (bio, ECG, imagerie)</label><textarea id="c-bio" rows="2"></textarea></div>
+      <label class="chk"><input type="checkbox" class="uselib" id="lib-cas"> Utiliser ma bibliothèque</label>
+      <label class="chk"><input type="checkbox" id="short-cas"> Réponse courte (plus rapide)</label>
       <div class="actions">
         <button class="btn btn-primary run" type="submit">Diagnostic et traitement</button>
         <button class="btn btn-ghost" type="button" id="c-ex">Cas exemple</button>
@@ -173,7 +184,6 @@ footer{margin:28px 0 40px;font-size:13px;color:var(--muted);max-width:85ch}
     <div class="out" data-out="cas"></div>
   </section>
 
-  <!-- COURS -->
   <section class="panel" data-panel="cours" hidden>
     <form class="sheet" id="f-cours" autocomplete="off">
       <h2>Explique-moi un cours</h2>
@@ -182,17 +192,18 @@ footer{margin:28px 0 40px;font-size:13px;color:var(--muted);max-width:85ch}
       <div class="field"><label for="co-niv">Niveau</label>
         <select id="co-niv"><option value="1re-2e année (sciences fondamentales)">1re–2e année</option><option value="3e-5e année (externat)" selected>3e–5e année (externat)</option><option value="6e-7e année / internat">6e–7e année / internat</option></select></div>
       <div class="chips">
+        <button type="button" class="chip" data-fill="co-sujet">Plexus brachial</button>
         <button type="button" class="chip" data-fill="co-sujet">Diabète de type 2</button>
-        <button type="button" class="chip" data-fill="co-sujet">Pneumopathie aiguë communautaire</button>
         <button type="button" class="chip" data-fill="co-sujet">Syndrome néphrotique</button>
         <button type="button" class="chip" data-fill="co-sujet">Hypersensibilités (Gell et Coombs)</button>
       </div>
+      <label class="chk"><input type="checkbox" class="uselib" id="lib-cours"> Utiliser ma bibliothèque</label>
+      <label class="chk"><input type="checkbox" id="short-cours"> Réponse courte (plus rapide)</label>
       <div class="actions"><button class="btn btn-primary run" type="submit">Rédiger le cours</button></div>
     </form>
     <div class="out" data-out="cours"></div>
   </section>
 
-  <!-- MECANISME -->
   <section class="panel" data-panel="meca" hidden>
     <form class="sheet" id="f-meca" autocomplete="off">
       <h2>Comprendre un mécanisme</h2>
@@ -200,15 +211,16 @@ footer{margin:28px 0 40px;font-size:13px;color:var(--muted);max-width:85ch}
       <div class="field"><label for="m-q">Question</label><textarea id="m-q" rows="3" placeholder="ex. Pourquoi l'hypokaliémie donne-t-elle des ondes U ?"></textarea></div>
       <div class="chips">
         <button type="button" class="chip" data-fill="m-q">Pourquoi la cirrhose donne-t-elle une ascite ?</button>
-        <button type="button" class="chip" data-fill="m-q">Comment l'insuline fait-elle entrer le glucose dans la cellule ?</button>
+        <button type="button" class="chip" data-fill="m-q">Pourquoi une lésion du nerf radial donne-t-elle une main tombante ?</button>
         <button type="button" class="chip" data-fill="m-q">Pourquoi l'acidose métabolique entraîne-t-elle une hyperkaliémie ?</button>
       </div>
+      <label class="chk"><input type="checkbox" class="uselib" id="lib-meca"> Utiliser ma bibliothèque</label>
+      <label class="chk"><input type="checkbox" id="short-meca"> Réponse courte (plus rapide)</label>
       <div class="actions"><button class="btn btn-primary run" type="submit">Expliquer</button></div>
     </form>
     <div class="out" data-out="meca"></div>
   </section>
 
-  <!-- RECHERCHE -->
   <section class="panel" data-panel="rech" hidden>
     <form class="sheet" id="f-rech" autocomplete="off">
       <h2>Recherche dans la littérature</h2>
@@ -220,87 +232,109 @@ footer{margin:28px 0 40px;font-size:13px;color:var(--muted);max-width:85ch}
     <div class="out" data-out="rech"></div>
   </section>
 
-  <footer><strong>Sémio</strong> · conçu et développé par Yahya. Les réponses peuvent contenir des erreurs, en particulier sur les doses : vérifie toujours dans les recommandations officielles. N'entre aucune donnée permettant d'identifier un patient.<br><span style="opacity:.75">Sémio-1 est construit sur le modèle open source Gemma 4 (licence Apache 2.0), exécuté avec Transformers.js et WebGPU.</span></footer>
+  <section class="panel" data-panel="biblio" hidden>
+    <div class="sheet">
+      <h2>Ma bibliothèque privée</h2>
+      <p class="hint">Ajoute tes livres en PDF. Ils restent <strong>uniquement dans ce navigateur</strong>, sur ton ordinateur : rien n'est envoyé ni publié. Sémio peut ensuite chercher dedans et citer la page.</p>
+      <div class="field"><label for="b-files">Ajouter des PDF</label><input type="file" id="b-files" accept="application/pdf" multiple></div>
+      <div class="banner info" id="b-status" hidden></div>
+      <ul class="books" id="b-list"></ul>
+    </div>
+    <div class="out">
+      <form class="field" id="b-search" autocomplete="off">
+        <label for="b-q">Chercher dans mes livres (une structure, une planche, une notion)</label>
+        <div class="composer"><input type="text" id="b-q" placeholder="ex. nerf radial, artère rénale, plexus brachial"><button class="btn btn-primary btn-sm" type="submit">Chercher</button></div>
+      </form>
+      <ul class="hits" id="b-hits"><li class="empty">Les pages trouvées s'afficheront ici. Clique sur « Voir la page » pour ouvrir la planche.</li></ul>
+    </div>
+  </section>
+
+  <dialog class="viewer" id="viewer">
+    <div class="vhead"><strong id="v-title">Page</strong><span class="actions"><button class="btn btn-ghost btn-sm" id="v-prev" type="button">‹ Préc.</button><button class="btn btn-ghost btn-sm" id="v-next" type="button">Suiv. ›</button><button class="btn btn-primary btn-sm" id="v-close" type="button">Fermer</button></span></div>
+    <div class="vbody"><canvas id="v-canvas"></canvas></div>
+  </dialog>
+
+  <footer><strong>Sémio</strong> · conçu et développé par YM. Les réponses peuvent contenir des erreurs, en particulier sur les doses : vérifie toujours dans les recommandations officielles. N'entre aucune donnée permettant d'identifier un patient.<br><span style="opacity:.75">Sémio-1 est un modèle affiné par YM à partir de Gemma 4 E2B (licence Apache 2.0), sur MediQAl (CC BY 4.0) et FrenchMedMCQA (Apache 2.0). Exécuté avec wllama (llama.cpp) et WebGPU.</span></footer>
 </main>
 
 <script type="module">
+import { Wllama } from "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.8.1/esm/index.js";
+import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs";
+const PDF_WORKER = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
+pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(URL.createObjectURL(new Blob([`import "${PDF_WORKER}";`], { type: "text/javascript" })), { type: "module" });
+
+const HF_REPO = "Medwebsite/semio-1-E2B-GGUF";
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const store = { get(k){ try{ return localStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch{} } };
 
-// ---------- worker / modèle ----------
-const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
-let ready = false, busy = false, current = null;
-const pending = new Map();
-
-function setModelUI(state, title, sub){
-  $("mdot").className = "dot " + (state || "");
-  $("mtitle").textContent = title; if (sub != null) $("msub").textContent = sub;
-}
+// ================= Modèle (wllama) =================
+const wllama = new Wllama({ default: "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.8.1/esm/wasm/wllama.wasm" });
+let ready = false, busy = false, ctl = null;
+function setModelUI(state, title, sub){ $("mdot").className = "dot " + (state || ""); $("mtitle").textContent = title; if (sub != null) $("msub").textContent = sub; }
 const fmtGB = (b) => (b / 1e9).toFixed(2) + " Go";
 
-worker.addEventListener("message", (e) => {
-  const m = e.data;
-  if (m.type === "progress"){
-    $("mbar").hidden = false;
-    const pct = m.total ? Math.min(100, m.loaded / m.total * 100) : 0;
-    $("mfill").style.width = pct.toFixed(1) + "%";
-    setModelUI("loading", "Téléchargement du modèle… " + pct.toFixed(0) + " %", fmtGB(m.loaded) + " / " + fmtGB(m.total) + " (la 1re fois seulement)");
-  } else if (m.type === "status"){
-    setModelUI("loading", m.text, null);
-  } else if (m.type === "ready"){
-    ready = true; $("mbar").hidden = true;
-    const name = $("modelId").selectedOptions[0].textContent;
-    setModelUI("ready", "Modèle prêt · " + name, "Tout tourne sur ton ordinateur. Tu peux même couper Internet (sauf pour la Recherche).");
-    $("loadBtn").textContent = "Changer"; $("loadBtn").disabled = false;
-    store.set("semio-model", $("modelId").value); store.set("semio-loaded", "1");
-    refreshButtons();
-  } else if (m.type === "token"){
-    const p = pending.get(m.id); if (p) p.onToken(m.text, m.tps);
-  } else if (m.type === "done"){
-    const p = pending.get(m.id); if (p){ pending.delete(m.id); p.resolve(m.text); }
-  } else if (m.type === "error"){
-    if (m.id && pending.has(m.id)){ const p = pending.get(m.id); pending.delete(m.id); p.reject(new Error(m.message)); }
-    else { ready = false; setModelUI("err", "Échec du chargement", m.message); $("loadBtn").disabled = false; $("mbar").hidden = true; refreshButtons(); }
-  }
-});
-
-function loadModel(){
-  if (!navigator.gpu){ $("gpuWarn").hidden = false; return; }
-  ready = false; refreshButtons();
-  $("loadBtn").disabled = true;
+async function modelUrl(){
+  const r = await fetch(`https://huggingface.co/api/models/${HF_REPO}/tree/main`);
+  if (!r.ok) throw new Error("Dépôt du modèle introuvable (" + r.status + ")");
+  const files = (await r.json()).map(f => f.path).filter(p => p.endsWith(".gguf") && !/mmproj/i.test(p)).sort();
+  const first = files.find(p => /-0+1-of-\d+\.gguf$/.test(p)) || files[0];
+  if (!first) throw new Error("Aucun fichier GGUF dans le dépôt");
+  return `https://huggingface.co/${HF_REPO}/resolve/main/${first}`;
+}
+async function loadModel(){
+  $("loadBtn").disabled = true; ready = false; refreshButtons();
   setModelUI("loading", "Connexion…", "Le téléchargement peut prendre plusieurs minutes la première fois.");
-  worker.postMessage({ type: "load", modelId: $("modelId").value });
+  try{
+    const url = await modelUrl();
+    await wllama.loadModelFromUrl(url, {
+      n_ctx: 6144,
+      progressCallback: ({ loaded, total }) => {
+        $("mbar").hidden = false; const pct = total ? Math.min(100, loaded / total * 100) : 0;
+        $("mfill").style.width = pct.toFixed(1) + "%";
+        setModelUI("loading", "Téléchargement de Sémio-1… " + pct.toFixed(0) + " %", fmtGB(loaded) + " / " + fmtGB(total) + " (la 1re fois seulement)");
+      },
+    });
+    ready = true; $("mbar").hidden = true; store.set("semio-loaded", "1");
+    setModelUI("ready", "Sémio-1 prêt" + (wllama.isSupportWebGPU() ? " · carte graphique (WebGPU)" : " · processeur"), "Tout tourne sur ton ordinateur. Tu peux même couper Internet (sauf pour la Recherche).");
+    $("loadBtn").hidden = true;
+  }catch(err){
+    setModelUI("err", "Échec du chargement", err.message); $("loadBtn").disabled = false; $("mbar").hidden = true;
+  }
+  refreshButtons();
 }
 $("loadBtn").addEventListener("click", loadModel);
-const savedModel = store.get("semio-model");
-if (savedModel) $("modelId").value = savedModel;
-if (!navigator.gpu) $("gpuWarn").hidden = false;
-else if (store.get("semio-loaded") === "1") loadModel(); // déjà en cache : rechargement rapide
+if (store.get("semio-loaded") === "1") loadModel();
 
-let seq = 0;
-function generate(messages, maxTokens, onToken){
-  const id = ++seq;
-  return new Promise((resolve, reject) => {
-    pending.set(id, { resolve, reject, onToken });
-    worker.postMessage({ type: "generate", id, messages, maxTokens });
-  });
+async function generate(messages, maxTokens, onToken){
+  ctl = new AbortController();
+  let text = "", n = 0; const t0 = performance.now();
+  await wllama.createChatCompletion({
+    messages, max_tokens: maxTokens, temperature: 0.2, top_p: 0.9, stream: true, abortSignal: ctl.signal,
+    onData: (chunk) => {
+      const d = chunk.choices?.[0]?.delta?.content; if (!d) return;
+      text += d; n++; const s = (performance.now() - t0) / 1000; onToken(text, s > 0 ? n / s : 0);
+    },
+  }).catch(e => { if (e?.name !== "AbortError") throw e; });
+  return text;
 }
 
-// ---------- prompts ----------
-const SYSTEM = `Tu es Sémio, l'assistant médical créé par Yahya pour les étudiants en médecine. Tu raisonnes comme un médecin enseignant qui forme des étudiants francophones (Maroc, France). Si on te demande qui tu es ou qui t'a créé, réponds que tu es Sémio, créé par Yahya. Tu réponds toujours en français, de façon exacte, structurée et pédagogique, en suivant les recommandations actuelles (HAS, ESC, OMS, sociétés savantes).
+// ================= Prompts =================
+const SYSTEM = `Tu es Sémio, l'assistant médical créé par YM pour les étudiants en médecine. Tu raisonnes comme un médecin enseignant qui forme des étudiants francophones (Maroc, France). Si on te demande qui tu es ou qui t'a créé, réponds que tu es Sémio, créé par YM. Ne mentionne jamais un autre nom de créateur. Tu réponds toujours en français, de façon exacte, structurée et pédagogique, en suivant les recommandations actuelles (HAS, ESC, OMS, sociétés savantes).
 Règles :
 - N'invente jamais de chiffre, de dose ou de référence. Si tu n'es pas sûr, écris « à vérifier ».
 - Donne les doses seulement si elles sont standard ; précise « dose usuelle adulte » et rappelle les contre-indications majeures.
 - Utilise des titres « ## » et des listes « - ». Pas de tableaux.
+- Si des extraits de livres sont fournis, appuie-toi d'abord sur eux et cite-les sous la forme [Livre, p. X].
 - Tu t'adresses à des étudiants, jamais à un patient qui chercherait à se soigner seul.`;
 const sys = { role: "system", content: SYSTEM };
 const user = (t) => ({ role: "user", content: t });
 const asst = (t) => ({ role: "assistant", content: t });
+const SHORT = "\n\nIMPORTANT : réponse COURTE, 150 mots maximum, uniquement l'essentiel, en puces.";
 
 const MODULES = {
   cas: {
-    max: 1400,
+    max: 1300,
     empty: ["Synthèse syndromique et gravité","Drapeaux rouges","Diagnostics différentiels classés, avec arguments pour et contre","Examens complémentaires hiérarchisés","Traitement initial (avec doses usuelles)","Éléments à compléter à l'interrogatoire"],
     build(){
       const v = (id) => $(id).value.trim();
@@ -308,14 +342,11 @@ const MODULES = {
       const vit = [v("c-ta") && "TA " + v("c-ta") + " mmHg", v("c-fc") && "FC " + v("c-fc") + " bpm", v("c-fr") && "FR " + v("c-fr") + "/min", v("c-t") && "T° " + v("c-t") + " °C", v("c-spo2") && "SpO2 " + v("c-spo2") + " %"].filter(Boolean).join(", ");
       const cas = [
         `Patient : ${v("c-age") ? v("c-age") + " ans" : "âge non précisé"}, ${v("c-sexe") || "sexe non précisé"}, contexte : ${v("c-ctx")}.`,
-        v("c-motif") && "Motif : " + v("c-motif"),
-        v("c-hdm") && "Histoire : " + v("c-hdm"),
-        v("c-atcd") && "Antécédents / FDR / traitements : " + v("c-atcd"),
-        vit && "Constantes : " + vit,
-        v("c-exam") && "Examen : " + v("c-exam"),
-        v("c-bio") && "Résultats : " + v("c-bio"),
+        v("c-motif") && "Motif : " + v("c-motif"), v("c-hdm") && "Histoire : " + v("c-hdm"),
+        v("c-atcd") && "Antécédents / FDR / traitements : " + v("c-atcd"), vit && "Constantes : " + vit,
+        v("c-exam") && "Examen : " + v("c-exam"), v("c-bio") && "Résultats : " + v("c-bio"),
       ].filter(Boolean).join("\n");
-      return { label: (v("c-motif") || "Cas clinique"), prompt: `Analyse ce cas clinique comme un senior qui corrige un étudiant.
+      return { label: v("c-motif") || "Cas clinique", query: v("c-motif") + " " + v("c-hdm") + " " + v("c-exam"), prompt: `Analyse ce cas clinique comme un senior qui corrige un étudiant.
 
 CAS :
 ${cas}
@@ -331,51 +362,46 @@ Réponds avec exactement ces sections, dans cet ordre :
 ## Traitement initial
 (mesures immédiates puis traitement du diagnostic le plus probable, avec doses usuelles adultes et contre-indications)
 ## À compléter
-(questions et éléments d'examen manquants)
-## Point pédagogique
-(un piège classique)` };
+## Point pédagogique` };
     }
   },
   cours: {
-    max: 1700,
+    max: 1500,
     empty: ["Définition et épidémiologie","Physiopathologie","Clinique et diagnostic","Diagnostics différentiels","Traitement","Points clés à retenir pour l'examen"],
     build(){
       const s = $("co-sujet").value.trim(); if (!s) throw new Error("Indique un sujet.");
-      return { label: s, prompt: `Rédige un cours complet sur : « ${s} », pour un étudiant en ${$("co-niv").value}.
-Sections : ## Définition et épidémiologie, ## Physiopathologie (enchaînement des mécanismes), ## Clinique, ## Examens et diagnostic positif, ## Diagnostics différentiels, ## Complications, ## Traitement (objectifs, moyens, indications), ## Points clés pour l'examen (5 à 8 puces), ## 3 QCM d'auto-évaluation (avec la correction à la fin).
-Adapte la profondeur au niveau demandé.` };
+      return { label: s, query: s, prompt: `Rédige un cours complet sur : « ${s} », pour un étudiant en ${$("co-niv").value}.
+Si c'est un sujet d'anatomie : ## Situation et rapports, ## Description, ## Vascularisation et innervation, ## Applications cliniques, ## Points clés.
+Sinon : ## Définition et épidémiologie, ## Physiopathologie, ## Clinique, ## Examens et diagnostic, ## Diagnostics différentiels, ## Traitement, ## Points clés pour l'examen.
+Termine par ## 3 QCM d'auto-évaluation (avec la correction à la fin).` };
     }
   },
   meca: {
-    max: 1100,
+    max: 1000,
     empty: ["Réponse courte en une phrase","La chaîne de mécanismes étape par étape (A → B → C)","Conséquences cliniques et paracliniques","Un moyen mnémotechnique ou une analogie"],
     build(){
       const q = $("m-q").value.trim(); if (!q) throw new Error("Pose une question.");
-      return { label: q, prompt: `Question d'un étudiant : « ${q} »
-Explique le mécanisme. Sections : ## Réponse courte (1-2 phrases), ## Mécanisme étape par étape (liste numérotée, chaque étape mène à la suivante, avec les molécules / récepteurs / canaux en jeu), ## Conséquences cliniques et paracliniques, ## Pour retenir (une analogie ou un moyen mnémotechnique).` };
+      return { label: q, query: q, prompt: `Question d'un étudiant : « ${q} »
+Explique le mécanisme. Sections : ## Réponse courte (1-2 phrases), ## Mécanisme étape par étape (liste numérotée, avec les molécules / récepteurs / structures en jeu), ## Conséquences cliniques et paracliniques, ## Pour retenir (une analogie ou un moyen mnémotechnique).` };
     }
   },
-  rech: {
-    max: 1100,
-    empty: ["Les vrais articles trouvés (titre, revue, année, lien)","Une synthèse en français qui cite chaque article [1], [2]…","Le niveau de preuve et les limites"],
-    build(){ const q = $("r-q").value.trim(); if (!q) throw new Error("Pose une question de recherche."); return { label: q, prompt: q }; }
-  }
+  rech: { max: 1000, empty: ["Les vrais articles trouvés (titre, revue, année, lien)","Une synthèse en français qui cite chaque article [1], [2]…","Le niveau de preuve et les limites"],
+    build(){ const q = $("r-q").value.trim(); if (!q) throw new Error("Pose une question de recherche."); return { label: q, prompt: q }; } }
 };
 
-// ---------- markdown léger (sans innerHTML) ----------
+// ================= Markdown léger =================
 function inline(node, s){
-  s.split(/(\*\*[^*]+\*\*|`[^`]+`|\[\d+\])/g).forEach(part => {
+  s.split(/(\*\*[^*]+\*\*|\[[^\]]{2,80}, p\. ?\d+\])/g).forEach(part => {
     if (!part) return;
     if (/^\*\*[^*]+\*\*$/.test(part)) node.append(el("strong", null, part.slice(2, -2)));
-    else if (/^`[^`]+`$/.test(part)) node.append(el("code", null, part.slice(1, -1)));
+    else if (/^\[[^\]]+, p\. ?\d+\]$/.test(part)) node.append(el("strong", null, part));
     else node.append(document.createTextNode(part.replace(/(^|\s)\*([^*]+)\*/g, "$1$2")));
   });
 }
 function md(text){
   const f = document.createDocumentFragment(); let list = null, ltype = null;
   for (const raw of String(text).split("\n")){
-    const line = raw.replace(/\s+$/, "");
-    let m;
+    const line = raw.replace(/\s+$/, ""); let m;
     if ((m = line.match(/^(#{1,4})\s+(.*)/))){ list = null; const h = el(m[1].length <= 2 ? "h3" : "h4"); inline(h, m[2]); f.append(h); }
     else if ((m = line.match(/^\s*[-*•]\s+(.*)/)) || (m = line.match(/^\s*(\d+)[.)]\s+(.*)/))){
       const ord = /^\s*\d/.test(line); const content = ord ? m[2] : m[1];
@@ -388,12 +414,12 @@ function md(text){
   return f;
 }
 
-// ---------- panneaux de sortie ----------
-const state = {}; // par module : { history:[], thread, composer }
+// ================= Panneaux =================
+const state = {};
 function emptyState(key){
   const out = document.querySelector(`[data-out="${key}"]`); out.replaceChildren();
   const head = el("div", "out-head"); head.append(el("span", "label", "Réponse"), el("span", "speed")); out.append(head);
-  const e = el("div", "empty"); e.append(document.createTextNode(ready ? "Remplis le formulaire puis lance. Tu obtiendras :" : "Charge d'abord le modèle (en haut), puis remplis le formulaire. Tu obtiendras :"));
+  const e = el("div", "empty"); e.append(document.createTextNode("Charge Sémio-1 (en haut), remplis le formulaire puis lance. Tu obtiendras :"));
   const ul = el("ul"); MODULES[key].empty.forEach(t => ul.append(el("li", null, t))); e.append(ul); out.append(e);
   state[key] = { history: [], out };
 }
@@ -409,7 +435,7 @@ function threadFor(key){
     ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); comp.requestSubmit(); } });
     const send = el("button", "btn btn-primary btn-sm run", "Envoyer"); send.type = "submit";
     const stop = el("button", "btn btn-ghost btn-sm stop", "Arrêter"); stop.type = "button"; stop.hidden = true;
-    stop.onclick = () => worker.postMessage({ type: "interrupt" });
+    stop.onclick = () => ctl?.abort();
     comp.append(ta, send, stop); out.append(comp);
     comp.addEventListener("submit", ev => { ev.preventDefault(); const q = ta.value.trim(); if (!q) return; ta.value = ""; ask(key, q, q, MODULES[key].max, true); });
     s.composer = comp;
@@ -417,7 +443,7 @@ function threadFor(key){
   return s.thread;
 }
 
-async function ask(key, shown, prompt, maxTokens, followUp){
+async function ask(key, shown, prompt, maxTokens, followUp, query){
   if (!ready || busy) return;
   busy = true; refreshButtons();
   const s = state[key]; const thread = threadFor(key);
@@ -426,7 +452,15 @@ async function ask(key, shown, prompt, maxTokens, followUp){
   const a = el("div", "msg a", "Réflexion…"); thread.append(a);
   s.composer.querySelector(".stop").hidden = false;
   const speed = s.out.querySelector(".speed");
-  const msgs = [sys, ...s.history.slice(-6), user(prompt)];
+  let fullPrompt = prompt, hits = [];
+  const short = $("short-" + key)?.checked;
+  if (short) { fullPrompt += SHORT; maxTokens = 350; }
+  if (!followUp && $("lib-" + key)?.checked && LIB.ready()){
+    a.textContent = "Recherche dans ta bibliothèque…";
+    hits = await LIB.search(query || prompt, 4);
+    if (hits.length) fullPrompt = "Extraits de mes livres :\n\n" + hits.map(h => `[${h.short}, p. ${h.page}]\n${h.text.slice(0, 900)}`).join("\n\n") + "\n\n---\n\n" + fullPrompt;
+  }
+  const msgs = [sys, ...s.history.slice(-6), user(fullPrompt)];
   let last = 0;
   try{
     const text = await generate(msgs, maxTokens, (t, tps) => {
@@ -434,25 +468,18 @@ async function ask(key, shown, prompt, maxTokens, followUp){
       a.replaceChildren(md(t)); speed.textContent = tps.toFixed(1) + " tokens/s";
     });
     a.replaceChildren(md(text || "(pas de réponse)"));
-    s.history.push(user(prompt), asst(text));
-    return text;
-  }catch(err){
-    a.replaceChildren(el("div", "banner err", "Erreur : " + err.message));
-  }finally{
-    busy = false; s.composer.querySelector(".stop").hidden = true; refreshButtons();
-  }
+    if (hits.length){ const box = el("div", "srcs"); box.append(el("span", "label", "Pages consultées :")); hits.forEach(h => box.append(pageButton(h))); a.append(box); }
+    s.history.push(user(fullPrompt), asst(text));
+  }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
+  finally{ busy = false; s.composer.querySelector(".stop").hidden = true; refreshButtons(); }
 }
-
-function refreshButtons(){
-  document.querySelectorAll(".run").forEach(b => { b.disabled = !ready || busy; });
-}
+function refreshButtons(){ document.querySelectorAll(".run").forEach(b => { b.disabled = !ready || busy; }); }
 refreshButtons();
 
-// ---------- formulaires ----------
 ["cas","cours","meca"].forEach(key => {
   $("f-" + key).addEventListener("submit", ev => {
     ev.preventDefault();
-    try{ const { label, prompt } = MODULES[key].build(); ask(key, label, prompt, MODULES[key].max, false); }
+    try{ const { label, prompt, query } = MODULES[key].build(); ask(key, label, prompt, MODULES[key].max, false, query); }
     catch(err){ showFormError(key, err.message); }
   });
 });
@@ -461,7 +488,7 @@ function showFormError(key, msg){
   const b = el("div", "banner err form", msg); out.prepend(b); setTimeout(() => b.remove(), 4000);
 }
 
-// Recherche : mots-clés -> Europe PMC -> synthèse citée
+// ================= Recherche Europe PMC =================
 $("f-rech").addEventListener("submit", async ev => {
   ev.preventDefault();
   let q; try{ q = MODULES.rech.build().prompt; }catch(err){ showFormError("rech", err.message); return; }
@@ -471,65 +498,164 @@ $("f-rech").addEventListener("submit", async ev => {
   const status = el("div", "msg a", "Traduction de la question en mots-clés…"); thread.append(status);
   busy = true; refreshButtons();
   let kw = "";
-  try{
-    kw = (await generate([user(`Convert this medical research question into a short English search query for PubMed (4 to 8 keywords, use AND between concepts, no explanation, one line only).\nQuestion: ${q}`)], 40, () => {})).split("\n")[0].replace(/["«»]/g, "").trim();
-  }catch(err){ kw = q; }
-  busy = false;
-  status.textContent = "Recherche d'articles : " + kw;
+  try{ kw = (await generate([user(`Convert this medical research question into a short English search query for PubMed (4 to 8 keywords, use AND between concepts, no explanation, one line only).\nQuestion: ${q}`)], 40, () => {})).split("\n")[0].replace(/["«»*]/g, "").trim(); }catch(err){ kw = q; }
+  busy = false; status.textContent = "Recherche d'articles : " + kw;
   let arts = [];
   try{
-    const url = "https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&resultType=core&sort=RELEVANCE&pageSize=" + $("r-n").value +
-      "&query=" + encodeURIComponent("(" + kw + ") AND HAS_ABSTRACT:y AND SRC:MED");
+    const url = "https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&resultType=core&sort=RELEVANCE&pageSize=" + $("r-n").value + "&query=" + encodeURIComponent("(" + kw + ") AND HAS_ABSTRACT:y AND SRC:MED");
     const r = await fetch(url); if (!r.ok) throw new Error("HTTP " + r.status);
-    const j = await r.json(); arts = (j.resultList && j.resultList.result) || [];
-  }catch(err){
-    status.replaceChildren(el("div", "banner err", "Impossible de joindre Europe PMC (connexion Internet ?). " + err.message)); refreshButtons(); return;
-  }
+    arts = ((await r.json()).resultList?.result) || [];
+  }catch(err){ status.replaceChildren(el("div", "banner err", "Impossible de joindre Europe PMC (connexion Internet ?). " + err.message)); refreshButtons(); return; }
   if (!arts.length){ status.replaceChildren(el("div", "banner info", "Aucun article trouvé pour « " + kw + " ». Reformule la question.")); refreshButtons(); return; }
-
   const refs = el("ol", "refs");
   arts.forEach((a, i) => {
     const li = el("li"); const link = el("a", null, "[" + (i+1) + "] " + a.title.replace(/<[^>]+>/g, ""));
-    link.href = a.pmid ? "https://pubmed.ncbi.nlm.nih.gov/" + a.pmid + "/" : "https://europepmc.org/article/" + a.source + "/" + a.id;
-    link.target = "_blank"; link.rel = "noopener";
-    li.append(link, el("div", "meta", [a.authorString && a.authorString.split(",").slice(0,3).join(",") + (a.authorString.split(",").length > 3 ? " et al." : ""), a.journalTitle || (a.journalInfo && a.journalInfo.journal && a.journalInfo.journal.title), a.pubYear].filter(Boolean).join(" · ")));
+    link.href = a.pmid ? "https://pubmed.ncbi.nlm.nih.gov/" + a.pmid + "/" : "https://europepmc.org/article/" + a.source + "/" + a.id; link.target = "_blank"; link.rel = "noopener";
+    const au = (a.authorString || "").split(",");
+    li.append(link, el("div", "meta", [a.authorString && au.slice(0,3).join(",") + (au.length > 3 ? " et al." : ""), a.journalTitle, a.pubYear].filter(Boolean).join(" · ")));
     refs.append(li);
   });
   status.replaceChildren(el("h3", null, "Articles trouvés"), refs);
-
-  const corpus = arts.map((a, i) => `[${i+1}] ${a.title.replace(/<[^>]+>/g,"")} (${a.journalTitle || ""} ${a.pubYear || ""})\nRésumé : ${(a.abstractText || "").replace(/<[^>]+>/g, "").slice(0, 1600)}`).join("\n\n");
-  const prompt = `Question de l'étudiant : « ${q} »
-
-Voici les résumés d'articles scientifiques trouvés :
-
-${corpus}
-
-En te basant UNIQUEMENT sur ces résumés, réponds en français avec : ## Réponse courte, ## Ce que montrent les articles (chaque affirmation suivie de sa référence [n]), ## Niveau de preuve et limites (type d'étude, population, biais). N'ajoute aucun article qui n'est pas dans la liste.`;
-  await askInto("rech", prompt);
-});
-async function askInto(key, prompt){
-  const s = state[key]; const thread = threadFor(key);
+  const corpus = arts.map((a, i) => `[${i+1}] ${a.title.replace(/<[^>]+>/g,"")} (${a.journalTitle || ""} ${a.pubYear || ""})\nRésumé : ${(a.abstractText || "").replace(/<[^>]+>/g, "").slice(0, 1400)}`).join("\n\n");
+  const prompt = `Question de l'étudiant : « ${q} »\n\nVoici les résumés d'articles scientifiques trouvés :\n\n${corpus}\n\nEn te basant UNIQUEMENT sur ces résumés, réponds en français avec : ## Réponse courte, ## Ce que montrent les articles (chaque affirmation suivie de sa référence [n]), ## Niveau de preuve et limites. N'ajoute aucun article qui n'est pas dans la liste.`;
   busy = true; refreshButtons();
   const a = el("div", "msg a", "Lecture des résumés…"); thread.append(a);
   s.composer.querySelector(".stop").hidden = false;
   const speed = s.out.querySelector(".speed"); let last = 0;
   try{
-    const text = await generate([sys, user(prompt)], MODULES[key].max, (t, tps) => {
-      const now = performance.now(); if (now - last < 80) return; last = now;
-      a.replaceChildren(md(t)); speed.textContent = tps.toFixed(1) + " tokens/s";
-    });
+    const text = await generate([sys, user(prompt)], MODULES.rech.max, (t, tps) => { const now = performance.now(); if (now - last < 80) return; last = now; a.replaceChildren(md(t)); speed.textContent = tps.toFixed(1) + " tokens/s"; });
     a.replaceChildren(md(text)); s.history = [user(prompt), asst(text)];
   }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
   finally{ busy = false; s.composer.querySelector(".stop").hidden = true; refreshButtons(); }
-}
+});
 
-// ---------- divers ----------
+// ================= Ma bibliothèque (IndexedDB + pdf.js + BM25) =================
+const LIB = (() => {
+  let db = null, books = [], docs = [], index = null;
+  const open = () => new Promise((res, rej) => {
+    const r = indexedDB.open("semio-lib", 1);
+    r.onupgradeneeded = () => { const d = r.result; d.createObjectStore("books", { keyPath: "id" }); d.createObjectStore("files"); d.createObjectStore("pages", { keyPath: "bookId" }); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+  const tx = (store, mode, fn) => new Promise((res, rej) => { const t = db.transaction(store, mode); const out = fn(t.objectStore(store)); t.oncomplete = () => res(out?.result ?? out); t.onerror = () => rej(t.error); });
+  const reqP = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  const norm = (s) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+  const STOP = new Set("le la les de des du un une et ou en au aux a d l par pour sur dans avec est sont qui que quoi the of and to in is for on with by an as at from".split(" "));
+  const tokens = (s) => norm(s).split(/[^a-z0-9]+/).filter(t => t.length > 2 && !STOP.has(t)).map(t => t.length > 5 ? t.replace(/(es|s|aux|ales?)$/, "") : t);
+  const shortName = (n) => n.replace(/\.pdf$/i, "").replace(/^[.\d\s]+/, "").slice(0, 40);
+
+  function build(){
+    const df = new Map(); let total = 0;
+    for (const d of docs){ d.tf = new Map(); for (const t of tokens(d.text)){ d.tf.set(t, (d.tf.get(t) || 0) + 1); } d.len = [...d.tf.values()].reduce((a, b) => a + b, 0); total += d.len; for (const t of d.tf.keys()) df.set(t, (df.get(t) || 0) + 1); }
+    index = { df, avg: total / Math.max(1, docs.length), N: docs.length };
+  }
+  async function init(){
+    db = await open();
+    books = await tx("books", "readonly", s => s.getAll());
+    docs = [];
+    for (const b of books){
+      const p = await tx("pages", "readonly", s => s.get(b.id));
+      (p?.pages || []).forEach((text, i) => { if (text) docs.push({ bookId: b.id, book: b.name, short: shortName(b.name), page: i + 1, text }); });
+    }
+    build(); render();
+  }
+  async function add(file){
+    const id = file.name + "|" + file.size;
+    if (books.some(b => b.id === id)) return;
+    status(`Lecture de « ${file.name} »…`);
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const pages = [];
+    for (let i = 1; i <= pdf.numPages; i++){
+      const tc = await (await pdf.getPage(i)).getTextContent();
+      pages.push(tc.items.map(it => it.str).join(" ").replace(/\s+/g, " ").trim());
+      if (i % 20 === 0) status(`Lecture de « ${file.name} » : page ${i} / ${pdf.numPages}`);
+    }
+    const withText = pages.filter(p => p.length > 40).length;
+    const b = { id, name: file.name, pages: pdf.numPages, withText, added: Date.now() };
+    await tx("files", "readwrite", s => s.put(file, id));
+    await tx("pages", "readwrite", s => s.put({ bookId: id, pages }));
+    await tx("books", "readwrite", s => s.put(b));
+    books.push(b);
+    pages.forEach((text, i) => { if (text) docs.push({ bookId: id, book: b.name, short: shortName(b.name), page: i + 1, text }); });
+    build(); render();
+    status(withText < pdf.numPages * 0.2 ? `« ${file.name} » ajouté, mais c'est un scan : presque aucun texte lisible (${withText} pages sur ${pdf.numPages}). Il faudrait d'abord une reconnaissance de texte (OCR).` : `« ${file.name} » ajouté : ${withText} pages avec du texte sur ${pdf.numPages}.`);
+  }
+  async function remove(id){
+    await tx("books", "readwrite", s => s.delete(id)); await tx("files", "readwrite", s => s.delete(id)); await tx("pages", "readwrite", s => s.delete(id));
+    books = books.filter(b => b.id !== id); docs = docs.filter(d => d.bookId !== id); build(); render();
+  }
+  function search(q, k = 8){
+    if (!index || !docs.length) return [];
+    const qt = [...new Set(tokens(q))]; const k1 = 1.4, bb = 0.6;
+    const scored = [];
+    for (const d of docs){
+      let sc = 0;
+      for (const t of qt){ const f = d.tf.get(t); if (!f) continue; const idf = Math.log(1 + (index.N - index.df.get(t) + 0.5) / (index.df.get(t) + 0.5)); sc += idf * f * (k1 + 1) / (f + k1 * (1 - bb + bb * d.len / index.avg)); }
+      if (sc > 0){
+        const nt = d.ntext || (d.ntext = norm(d.text));
+        if (qt.length > 1 && nt.includes(norm(q).trim())) sc *= 1.6;
+        if (qt.length > 1 && nt.slice(0, 260).includes(norm(q).trim())) sc *= 2;
+        scored.push({ d, sc });
+      }
+    }
+    scored.sort((a, b) => b.sc - a.sc);
+    return scored.slice(0, k).map(({ d }) => ({ ...d, plate: (d.text.match(/Planche\s+(\d+)/i) || [])[1], snippet: snippet(d.text, qt) }));
+  }
+  function snippet(text, qt){
+    const n = norm(text); let pos = -1; for (const t of qt){ pos = n.indexOf(t); if (pos >= 0) break; }
+    const start = Math.max(0, pos - 120); return (start > 0 ? "… " : "") + text.slice(start, start + 320) + "…";
+  }
+  function status(t){ const b = $("b-status"); b.hidden = !t; b.textContent = t || ""; }
+  function render(){
+    const ul = $("b-list"); ul.replaceChildren();
+    if (!books.length){ ul.append(el("li", "empty", "Aucun livre pour l'instant.")); }
+    for (const b of books){
+      const li = el("li"); const info = el("div"); info.append(el("div", "bname", b.name), el("div", "bmeta", `${b.pages} pages · ${b.withText} avec du texte` + (b.withText < b.pages * 0.2 ? " · scan (OCR nécessaire)" : "")));
+      const del = el("button", "btn btn-ghost btn-sm", "Retirer"); del.type = "button";
+      del.onclick = () => { if (del.dataset.c){ remove(b.id); } else { del.dataset.c = 1; del.textContent = "Confirmer ?"; setTimeout(() => { del.dataset.c = ""; del.textContent = "Retirer"; }, 3000); } };
+      li.append(info, del); ul.append(li);
+    }
+    document.querySelectorAll(".uselib").forEach(c => { c.disabled = !books.length; if (!books.length) c.checked = false; });
+  }
+  async function file(id){ return tx("files", "readonly", s => s.get(id)); }
+  return { init, add, search, file, ready: () => docs.length > 0, status };
+})();
+
+// Visionneuse de pages
+let vDoc = null, vPage = 1, vBook = null;
+async function openPage(bookId, name, page){
+  const dlg = $("viewer");
+  if (vBook !== bookId){ const blob = await LIB.file(bookId); vDoc = await pdfjsLib.getDocument({ data: await blob.arrayBuffer() }).promise; vBook = bookId; }
+  vPage = page; $("v-title").textContent = `${name} · p. ${page}`;
+  if (!dlg.open) dlg.showModal();
+  const pg = await vDoc.getPage(page); const vp = pg.getViewport({ scale: 1.6 });
+  const cv = $("v-canvas"); cv.width = vp.width; cv.height = vp.height;
+  await pg.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
+}
+$("v-close").onclick = () => $("viewer").close();
+$("v-prev").onclick = () => vDoc && vPage > 1 && openPage(vBook, $("v-title").textContent.split(" · ")[0], vPage - 1);
+$("v-next").onclick = () => vDoc && vPage < vDoc.numPages && openPage(vBook, $("v-title").textContent.split(" · ")[0], vPage + 1);
+function pageButton(h){ const b = el("button", "chip", `${h.short}, p. ${h.page}` + (h.plate ? ` (pl. ${h.plate})` : "")); b.type = "button"; b.onclick = () => openPage(h.bookId, h.short, h.page); return b; }
+
+$("b-files").addEventListener("change", async (e) => {
+  const files = [...e.target.files]; e.target.value = "";
+  for (const f of files){ try{ await LIB.add(f); }catch(err){ LIB.status("Erreur avec « " + f.name + " » : " + err.message); } }
+});
+$("b-search").addEventListener("submit", (e) => {
+  e.preventDefault(); const q = $("b-q").value.trim(); const ul = $("b-hits"); ul.replaceChildren();
+  if (!q) return;
+  const hits = LIB.search(q, 12);
+  if (!hits.length){ ul.append(el("li", "empty", LIB.ready() ? "Rien trouvé. Essaie un autre mot (en français ou en anglais)." : "Ajoute d'abord des livres à gauche.")); return; }
+  for (const h of hits){ const li = el("li"); li.append(el("span", "src", `${h.short} · page ${h.page}` + (h.plate ? ` · planche ${h.plate}` : "")), el("span", "snip", h.snippet)); const b = el("button", "btn btn-ghost btn-sm", "Voir la page"); b.type = "button"; b.onclick = () => openPage(h.bookId, h.short, h.page); li.append(b); ul.append(li); }
+});
+LIB.init().catch(err => LIB.status("Bibliothèque indisponible dans ce navigateur : " + err.message));
+
+// ================= Divers =================
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t ? "true" : "false"));
   document.querySelectorAll(".panel").forEach(p => p.hidden = p.dataset.panel !== t.dataset.tab);
 }));
 document.querySelectorAll(".chip[data-fill]").forEach(c => c.addEventListener("click", () => { $(c.dataset.fill).value = c.textContent; }));
-
 const EX = { "c-age":"58", "c-sexe":"Homme", "c-ctx":"Urgences", "c-motif":"Douleur thoracique depuis 1 h",
   "c-hdm":"Douleur rétrosternale constrictive apparue au repos il y a 1 h, irradiant au bras gauche et à la mâchoire, 8/10, avec sueurs et nausées. Pas de dyspnée, pas de fièvre.",
   "c-atcd":"Tabac 30 PA, HTA sous amlodipine, diabète de type 2 sous metformine.",
@@ -538,7 +664,7 @@ const EX = { "c-age":"58", "c-sexe":"Homme", "c-ctx":"Urgences", "c-motif":"Doul
   "c-bio":"ECG : sus-décalage du segment ST de 3 mm en DII, DIII, aVF avec miroir en DI, aVL." };
 $("c-ex").addEventListener("click", () => Object.entries(EX).forEach(([k, v]) => $(k).value = v));
 $("c-clear").addEventListener("click", () => { $("f-cas").reset(); });
-Object.entries(EX).forEach(([k, v]) => $(k).value = v); // ouvre sur un cas exemple
+Object.entries(EX).forEach(([k, v]) => $(k).value = v);
 </script>
 </body>
 </html>
