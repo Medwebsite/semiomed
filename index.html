@@ -130,6 +130,15 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
 .chatopts{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
 .chatwrap .composer textarea{min-height:56px}
 .badge{font:600 11px/1 var(--f-body);text-transform:uppercase;letter-spacing:.06em;padding:3px 6px;border-radius:4px;background:var(--ok-soft);color:var(--ok);margin-left:6px}
+.drop{border:1.5px dashed rgba(212,175,55,.55);border-radius:10px;padding:16px;text-align:center;color:var(--muted);background:var(--field);cursor:pointer}
+.drop:hover,.drop.over{background:var(--accent-soft);color:var(--ink)}
+.drop strong{color:var(--accent-2)}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap}
+.thumb{position:relative;margin:0;width:96px;height:96px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#000}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb-x{position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:1px solid rgba(212,175,55,.5);background:rgba(8,18,38,.88);color:var(--accent-2);cursor:pointer;font-size:16px;line-height:1}
+.msg.u .mini{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.msg.u .mini img{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid rgba(212,175,55,.35)}
 </style>
 </head>
 <body>
@@ -163,6 +172,7 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
   <nav class="tabs" role="tablist">
     <button class="tab" role="tab" data-tab="chat" aria-selected="false">Discussion</button>
     <button class="tab" role="tab" data-tab="cas" aria-selected="true">Cas clinique</button>
+    <button class="tab" role="tab" data-tab="exam" aria-selected="false">Examens &amp; imagerie</button>
     <button class="tab" role="tab" data-tab="cours" aria-selected="false">Cours</button>
     <button class="tab" role="tab" data-tab="meca" aria-selected="false">Mécanisme</button>
     <button class="tab" role="tab" data-tab="rech" aria-selected="false">Recherche</button>
@@ -213,6 +223,30 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
       </div>
     </form>
     <div class="out" data-out="cas"></div>
+  </section>
+
+  <section class="panel" data-panel="exam" hidden>
+    <form class="sheet" id="f-exam" autocomplete="off">
+      <h2>Interpréter un examen</h2>
+      <p class="hint">Radio, scanner, IRM, ECG, échographie, bilan biologique… Ajoute une photo ou une capture de l'examen (ou un compte rendu en PDF) : Sémio-Pro l'analyse de façon systématique et t'explique tout en détail.</p>
+      <div class="row">
+        <div class="field"><label for="x-type">Type d'examen</label><select id="x-type"><option>Radiographie</option><option>Scanner (TDM)</option><option>IRM</option><option>ECG</option><option>Échographie</option><option>Biologie / bilan sanguin</option><option>Autre</option></select></div>
+        <div class="field"><label for="x-age">Âge</label><input type="number" id="x-age" min="0" max="120"></div>
+        <div class="field"><label for="x-sexe">Sexe</label><select id="x-sexe"><option value="">—</option><option>Homme</option><option>Femme</option></select></div>
+      </div>
+      <label class="drop" id="x-drop" for="x-files"><strong>Choisir des images ou un PDF</strong><br>ou glisse-les ici · 4 images maximum</label>
+      <input type="file" id="x-files" accept="image/*,application/pdf" multiple hidden>
+      <div class="thumbs" id="x-thumbs"></div>
+      <div class="field"><label for="x-ctx">Contexte clinique (facultatif)</label><textarea id="x-ctx" rows="2" placeholder="ex. Toux fébrile depuis 5 jours, crépitants à la base droite"></textarea></div>
+      <div class="field"><label for="x-q">Ta question (facultatif)</label><input type="text" id="x-q" placeholder="ex. Y a-t-il une pneumopathie ?"></div>
+      <p class="hint">Masque le nom du patient avant d'envoyer. Les images sont envoyées à Sémio-Pro uniquement pour l'analyse. L'interprétation doit toujours être confirmée par un médecin.</p>
+      <div class="actions"><button class="btn btn-primary" type="submit" id="x-run">Interpréter</button><button class="btn btn-ghost" type="button" id="x-clear">Effacer</button></div>
+    </form>
+    <div class="out" data-exam-out>
+      <div class="out-head"><span class="label">Interprétation</span><span class="speed" id="x-speed"></span></div>
+      <div class="thread" id="x-thread"><div class="empty">Ajoute un examen puis clique sur « Interpréter ». Tu obtiendras :<ul><li>la qualité et la technique de l'examen</li><li>une lecture systématique, élément par élément</li><li>les anomalies, le diagnostic le plus probable et les différentiels</li><li>la conduite à tenir et les examens complémentaires</li></ul></div></div>
+      <form class="composer" id="x-follow" hidden><textarea id="x-fin" rows="1" placeholder="Question de suivi sur cet examen…"></textarea><button class="btn btn-primary btn-sm" type="submit">Envoyer</button><button class="btn btn-ghost btn-sm" type="button" id="x-stop" hidden>Arrêter</button></form>
+    </div>
   </section>
 
   <section class="panel" data-panel="cours" hidden>
@@ -353,9 +387,9 @@ $("loadBtn").addEventListener("click", loadModel);
 updateEngineUI();
 if (engine === "local" && store.get("semio-loaded") === "1") loadModel();
 
-async function genRemote(messages, maxTokens, onToken){
+async function genRemote(messages, maxTokens, onToken, model = engine){
   let text = "", n = 0, buf = ""; const t0 = performance.now();
-  const r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: engine, messages, max_tokens: maxTokens }), signal: ctl.signal });
+  const r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model, messages, max_tokens: maxTokens }), signal: ctl.signal });
   if (!r.ok) throw new Error("Serveur Sémio : " + r.status + " " + (await r.text()).slice(0, 200));
   const reader = r.body.getReader(); const dec = new TextDecoder();
   try{
@@ -815,6 +849,113 @@ $("chat-form").addEventListener("submit", async ev => {
     if (text) { chat.history.push(user(q), asst(text)); saveChat(); }
   }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
   finally{ busy = false; $("chat-stop").hidden = true; refreshButtons(); }
+});
+
+// ================= Examens (imagerie, ECG, biologie) =================
+const exam = { imgs: [], history: [] };
+const GUIDE = {
+  "Radiographie": "vérifie d'abord l'identification de la région et la qualité (incidence, pénétration, inspiration, rotation), puis lis de façon systématique : os et articulations, parties molles, et pour un thorax : trachée, médiastin, silhouette cardiaque (index cardiothoracique), hiles, coupoles, culs-de-sac, plèvre, parenchyme zone par zone",
+  "Scanner (TDM)": "précise la région, le plan de coupe, l'injection ou non et la fenêtre (parenchymateuse, médiastinale, osseuse, cérébrale), puis lis organe par organe avec les densités",
+  "IRM": "précise la région, le plan et la séquence (T1, T2, FLAIR, diffusion, injection), puis décris les signaux organe par organe",
+  "ECG": "lis dans l'ordre : vitesse et étalonnage, rythme (sinusal ou non), fréquence (calcule-la), axe, onde P, PR, QRS (durée, morphologie, blocs, ondes Q), segment ST (sus ou sous-décalage, territoire et miroir), onde T, QT/QTc, puis synthèse",
+  "Échographie": "précise l'organe, la sonde et la coupe, puis décris échogénicité, taille, contours, structures et éventuels flux Doppler",
+  "Biologie / bilan sanguin": "relève chaque valeur avec son unité et la norme, signale ce qui est anormal (haut ou bas), regroupe par système (NFS, ionogramme, fonction rénale, bilan hépatique, inflammation, hémostase…) et interprète l'ensemble",
+  "Autre": "identifie d'abord de quel examen il s'agit, puis lis-le de façon systématique"
+};
+async function fileToImages(file){
+  const toJpeg = (c) => c.toDataURL("image/jpeg", 0.88);
+  if (file.type === "application/pdf"){
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise; const out = [];
+    for (let p = 1; p <= Math.min(pdf.numPages, 3); p++){
+      const page = await pdf.getPage(p); const v0 = page.getViewport({ scale: 1 });
+      const vp = page.getViewport({ scale: Math.min(2.5, 1600 / Math.max(v0.width, v0.height)) });
+      const c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+      const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: g, viewport: vp }).promise; out.push(toJpeg(c));
+    }
+    return out;
+  }
+  if (!file.type.startsWith("image/")) throw new Error("format non pris en charge : " + file.name);
+  const bmp = await createImageBitmap(file); const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas"); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+  return [toJpeg(c)];
+}
+function drawThumbs(msg){
+  const t = $("x-thumbs"); t.replaceChildren();
+  exam.imgs.forEach((src, i) => {
+    const f = el("figure", "thumb"); const im = new Image(); im.src = src; im.alt = "Examen " + (i + 1);
+    const x = el("button", "thumb-x", "×"); x.type = "button"; x.setAttribute("aria-label", "Retirer l'image " + (i + 1));
+    x.onclick = () => { exam.imgs.splice(i, 1); drawThumbs(); };
+    f.append(im, x); t.append(f);
+  });
+  if (msg) t.append(el("div", "banner err", msg));
+}
+async function addExamFiles(files){
+  let msg = "";
+  for (const f of files){
+    if (exam.imgs.length >= 4){ msg = "4 images maximum : les autres n'ont pas été ajoutées."; break; }
+    try{ for (const d of await fileToImages(f)){ if (exam.imgs.length < 4) exam.imgs.push(d); else msg = "4 images maximum : les autres n'ont pas été ajoutées."; } }
+    catch(err){ msg = "Impossible de lire « " + f.name + " » : " + err.message; }
+  }
+  drawThumbs(msg);
+}
+$("x-files").addEventListener("change", async e => { await addExamFiles([...e.target.files]); e.target.value = ""; });
+const drop = $("x-drop");
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => addExamFiles([...(e.dataTransfer?.files || [])]));
+document.addEventListener("paste", e => {
+  if ($("f-exam").closest("[data-panel]").hidden) return;
+  const files = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith("image/")); if (files.length) addExamFiles(files);
+});
+$("x-clear").addEventListener("click", () => {
+  exam.imgs = []; exam.history = []; drawThumbs(); $("f-exam").reset(); $("x-follow").hidden = true;
+  $("x-thread").replaceChildren(el("div", "empty", "Ajoute un examen puis clique sur « Interpréter »."));
+});
+$("x-stop").onclick = () => ctl?.abort();
+$("x-fin").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); $("x-follow").requestSubmit(); } });
+
+async function runExam(shown, content, imgs){
+  if (!API_URL || busy) return;
+  busy = true; refreshButtons(); $("x-run").disabled = true; $("x-stop").hidden = false;
+  const th = $("x-thread"); th.querySelector(".empty")?.remove();
+  const u = el("div", "msg u", shown);
+  if (imgs?.length){ const m = el("div", "mini"); imgs.forEach(src => { const im = new Image(); im.src = src; im.alt = ""; m.append(im); }); u.append(m); }
+  th.append(u);
+  const a = el("div", "msg a", "Analyse de l'examen…"); th.append(a); a.scrollIntoView({ block: "nearest" });
+  const userMsg = { role: "user", content };
+  ctl = new AbortController(); let last = 0;
+  try{
+    const text = await genRemote([sys, ...exam.history.slice(-8), userMsg], 1600, (t, tps) => {
+      const now = performance.now(); if (now - last < 80) return; last = now;
+      a.replaceChildren(md(t)); $("x-speed").textContent = tps.toFixed(1) + " tokens/s";
+    }, "pro");
+    a.replaceChildren(md(text || "(pas de réponse)"));
+    if (text){ exam.history.push(userMsg, asst(text)); $("x-follow").hidden = false; }
+  }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
+  finally{ busy = false; $("x-run").disabled = false; $("x-stop").hidden = true; refreshButtons(); }
+}
+$("f-exam").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const type = $("x-type").value, age = $("x-age").value, sexe = $("x-sexe").value, ctx = $("x-ctx").value.trim(), q = $("x-q").value.trim();
+  if (!exam.imgs.length && !ctx){ drawThumbs("Ajoute au moins une image de l'examen (ou colle le compte rendu dans le contexte)."); return; }
+  const patient = [age ? age + " ans" : "", sexe].filter(Boolean).join(", ") || "non précisé";
+  const prompt = `Interprète en détail cet examen : ${type}.
+Patient : ${patient}.
+Contexte clinique : ${ctx || "non précisé"}.
+${q ? "Question posée : " + q + "\n" : ""}
+Méthode : ${GUIDE[type] || GUIDE.Autre}.
+Structure ta réponse avec ces titres : ## Qualité et technique, ## Lecture systématique, ## Anomalies observées, ## Interprétation et diagnostic le plus probable, ## Diagnostics différentiels, ## Conduite à tenir et examens complémentaires, ## Points à retenir.
+Décris uniquement ce que tu vois vraiment sur l'image et dis clairement quand un élément n'est pas visible ou pas évaluable. Si l'image est floue, coupée, trop petite ou ne correspond pas au type indiqué, dis-le. Termine par une phrase rappelant que cette interprétation doit être confirmée par un médecin (radiologue, cardiologue ou biologiste selon l'examen).`;
+  const imgs = exam.imgs.slice();
+  const content = [{ type: "text", text: prompt }, ...imgs.map(url => ({ type: "image_url", image_url: { url } }))];
+  exam.history = []; $("x-thread").replaceChildren();
+  runExam(`${type}${q ? " · " + q : ""}${imgs.length ? " (" + imgs.length + " image" + (imgs.length > 1 ? "s" : "") + ")" : ""}`, content, imgs);
+});
+$("x-follow").addEventListener("submit", ev => {
+  ev.preventDefault(); const q = $("x-fin").value.trim(); if (!q) return; $("x-fin").value = "";
+  runExam(q, q, null);
 });
 
 // ================= Divers =================
