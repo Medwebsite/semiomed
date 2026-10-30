@@ -55,7 +55,8 @@ Les échantillons vont de 60 à 170 questions selon le test et le moteur.
 Données d'entraînement, avec nos remerciements :
 - [MediQAl](https://huggingface.co/datasets/ANR-MALADES/MediQAl) (CC BY 4.0)
 - [FrenchMedMCQA](https://huggingface.co/datasets/uy-rrodriguez/FrenchMedMCQA-extended) (Apache 2.0)
-- [Jip7e/hakim-decider-data](https://huggingface.co/datasets/Jip7e/hakim-decider-data) (CC BY-NC 4.0, pour Sémio-2b uniquement, usage non commercial)
+
+Les sources complètes de Sémio-2b sont indiquées sur sa page Hugging Face.
 
 Modèles de base : Gemma 4 (Google), Mistral-7B-Instruct-v0.2 (Mistral AI).
 
