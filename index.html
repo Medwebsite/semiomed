@@ -184,6 +184,7 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
     <div class="out-head"><span class="label">Discussion avec Sémio</span><span class="speed" id="chat-speed"></span></div>
     <div class="thread" id="chat-thread"><div class="empty">Pose n'importe quelle question de médecine : un cours, un doute, un cas, une révision. Sémio garde le fil de la conversation, comme un tuteur.</div></div>
     <div class="chatopts">
+      <label class="chk"><input type="checkbox" id="web-chat" checked> Recherche web (actualités)</label>
       <label class="chk"><input type="checkbox" class="uselib" id="lib-chat"> Utiliser la bibliothèque</label>
       <label class="chk"><input type="checkbox" id="short-chat"> Réponses courtes (plus rapide)</label>
       <button class="btn btn-ghost btn-sm" type="button" id="chat-new">Nouvelle discussion</button>
@@ -880,18 +881,52 @@ $("chat-form").addEventListener("submit", async ev => {
     const qw = (q.toLowerCase().match(/[\p{L}]{5,}/gu) || []);
     hits = (await LIB.search(q, 4)).filter(h => qw.filter(w => h.text.toLowerCase().includes(w)).length >= Math.min(2, qw.length));
   }
+  let web = [];
+  if ($("web-chat").checked && engine !== "local" && RECENT_RE.test(q + " " + (chat.history.slice(-2).map(m => m.content).join(" ")))){
+    a.textContent = "Recherche sur le web…";
+    try{ ctl = new AbortController(); web = await webSearch(q, chat.history.slice(-4)); }catch{}
+    a.textContent = "Réflexion…";
+  }
   let last = 0;
   try{
-    const sysc = hits.length ? { role: "system", content: sys.content + "\n\nContexte facultatif : extraits de la bibliothèque de l'utilisateur. Utilise-les seulement s'ils aident à répondre. Ne les mentionne jamais (ne dis pas « d'après les extraits » ni « ce n'est pas dans les livres ») : réponds toujours normalement avec tes connaissances.\n\n" + hits.map(h => `[${h.short}, p. ${h.page}]\n${h.text.slice(0, 800)}`).join("\n\n") } : sys;
+    const webNote = web.length ? "\n\nRésultats d'une recherche sur Wikipédia faite aujourd'hui. Pour les faits récents, appuie-toi d'abord sur eux et réponds directement (ne dis pas « d'après les informations fournies »). S'ils ne contiennent pas la réponse, dis-le en une phrase et donne ce que tu sais en précisant l'année de ton information. Réponds dans la langue de la personne.\n\n" + web.map(w => `[${w.title}]\n${w.text}`).join("\n\n") : "";
+    const libNote = hits.length ? "\n\nContexte facultatif : extraits de la bibliothèque de l'utilisateur. Utilise-les seulement s'ils aident à répondre. Ne les mentionne jamais (ne dis pas « d'après les extraits » ni « ce n'est pas dans les livres ») : réponds toujours normalement avec tes connaissances.\n\n" + hits.map(h => `[${h.short}, p. ${h.page}]\n${h.text.slice(0, 800)}`).join("\n\n") : "";
+    const sysc = (webNote || libNote) ? { role: "system", content: sys.content + webNote + libNote } : sys;
     const text = await generate([sysc, ...chat.history.slice(-12), user(full)], $("short-chat").checked ? 350 : 900, (t, tps) => {
       const now = performance.now(); if (now - last < 80) return; last = now;
       a.replaceChildren(md(t)); $("chat-speed").textContent = tps.toFixed(1) + " tokens/s";
     });
     a.replaceChildren(md(text || "(pas de réponse)"));
+    if (web.length){ const box = el("div", "srcs"); box.append(el("span", "label", "Sources web :")); web.forEach(w => { const l = el("a", "chip", w.title); l.href = w.url; l.target = "_blank"; l.rel = "noopener"; box.append(l); }); a.append(box); }
     if (text) { chat.history.push(user(q), asst(text)); saveChat(); }
   }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
   finally{ busy = false; $("chat-stop").hidden = true; refreshButtons(); }
 });
+
+const RECENT_RE = /(derni[eè]re?s?|cette ann[ée]e|l'ann[ée]e|actuel|actuellement|r[ée]cent|aujourd|maintenant|nouveaux?|nouvelles?|\b20[2-3]\d\b|nobel|[ée]lu|pr[ée]sident|ministre|actualit|news|latest|current|who won|qui a gagn|gagnant|laur[ée]at|chkoun|jdid|daba)/i;
+async function webSearch(q, hist){
+  const year = new Date().getFullYear();
+  const ctxt = hist.map(m => (m.role === "user" ? "Question : " : "Réponse : ") + String(m.content).slice(0, 300)).join("\n");
+  const kwTxt = await genRemote([{ role: "user", content: `Conversation :\n${ctxt}\nNouvelle question : ${q}\n\nNous sommes en ${year}. Écris deux requêtes de recherche Wikipédia pour trouver la réponse (3 à 6 mots-clés précis, avec l'année si c'est utile) : ligne 1 en anglais, ligne 2 en français. Réponds uniquement par ces deux lignes.` }], 40, () => {}, "pro", 0);
+  const lines = (kwTxt || q).split("\n").map(l => l.replace(/^\s*(\d[\.\)]|ligne\s*\d\s*:|-)\s*/i, "").replace(/["«»*]/g, " ").trim()).filter(Boolean);
+  const plan = [["en", lines[0] || q, 4], ["fr", lines[1] || q, 2]];
+  const titles = [];
+  for (const [lang, kw, n] of plan){
+    try{
+      const s = await (await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(kw.slice(0, 120))}&srlimit=${n}&format=json&origin=*`)).json();
+      (s.query?.search || []).forEach(x => titles.push([lang, x.title]));
+    }catch{}
+  }
+  titles.sort((x, y) => (y[1].includes(String(year)) ? 1 : 0) - (x[1].includes(String(year)) ? 1 : 0));
+  const pages = await Promise.all(titles.slice(0, 5).map(async ([lang, t]) => {
+    try{
+      const e = await (await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&prop=extracts|info&inprop=url&exchars=2000&explaintext=1&titles=${encodeURIComponent(t)}&format=json&origin=*`)).json();
+      const p = Object.values(e.query?.pages || {})[0];
+      return p?.extract ? { title: p.title, url: p.fullurl, text: p.extract.slice(0, 2000) } : null;
+    }catch{ return null; }
+  }));
+  return pages.filter(Boolean);
+}
 
 // ================= Examens (imagerie, ECG, biologie) =================
 const exam = { imgs: [], history: [] };
