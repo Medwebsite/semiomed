@@ -266,7 +266,7 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
   <section class="panel" data-panel="biblio" hidden>
     <div class="sheet">
       <h2>Ma bibliothèque privée</h2>
-      <p class="hint">Ajoute tes livres en PDF. Ils restent <strong>uniquement dans ce navigateur</strong>, sur ton ordinateur : rien n'est envoyé ni publié. Sémio peut ensuite chercher dedans et citer la page. La <strong>bibliothèque commune</strong> (manuels libres de droits) est disponible pour tout le monde.</p>
+      <p class="hint">Ajoute tes livres en PDF. Ils restent <strong>uniquement dans ce navigateur</strong>, sur ton ordinateur : rien n'est envoyé ni publié. Sémio peut ensuite chercher dedans pour mieux te répondre. La <strong>bibliothèque commune</strong> (manuels libres de droits) est disponible pour tout le monde.</p>
       <div class="field"><label for="b-files">Ajouter des PDF</label><input type="file" id="b-files" accept="application/pdf" multiple></div>
       <div class="banner info" id="b-status" hidden></div>
       <ul class="books" id="b-list"></ul>
@@ -399,7 +399,8 @@ Règles :
 - N'invente jamais de chiffre, de dose ou de référence. Si tu n'es pas sûr, écris « à vérifier ».
 - Donne les doses seulement si elles sont standard ; précise « dose usuelle adulte » et rappelle les contre-indications majeures.
 - Utilise des titres « ## » et des listes « - ». Pas de tableaux.
-- Si des extraits de livres sont fournis, utilise-les seulement s'ils répondent vraiment à la question (cite-les alors sous la forme [Livre, p. X]) ; sinon ignore-les.
+- Si des extraits de livres sont fournis, utilise-les seulement s'ils répondent vraiment à la question ; sinon ignore-les. Ne mentionne jamais tes sources, livres ou numéros de page dans la réponse : réponds directement.
+- Tiens compte de toute la conversation : une question de suivi (« et le traitement ? », « pourquoi ? », « et chez l'enfant ? ») porte sur le sujet dont on parlait juste avant.
 - Tu t'adresses à des étudiants, jamais à un patient qui chercherait à se soigner seul.`;
 const sys = { role: "system", content: SYSTEM };
 const user = (t) => ({ role: "user", content: t });
@@ -542,7 +543,6 @@ async function ask(key, shown, prompt, maxTokens, followUp, query){
       a.replaceChildren(md(t)); speed.textContent = tps.toFixed(1) + " tokens/s";
     });
     a.replaceChildren(md(text || "(pas de réponse)"));
-    if (hits.length){ const box = el("div", "srcs"); box.append(el("span", "label", "Pages consultées :")); hits.forEach(h => box.append(pageButton(h))); a.append(box); }
     s.history.push(user(fullPrompt), asst(text));
   }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
   finally{ busy = false; s.composer.querySelector(".stop").hidden = true; refreshButtons(); }
@@ -778,10 +778,15 @@ $("b-search").addEventListener("submit", (e) => {
 LIB.init().catch(err => LIB.status("Bibliothèque indisponible dans ce navigateur : " + err.message));
 
 // ================= Discussion =================
-const chat = { history: [] };
+const chat = { history: (() => { try{ const h = JSON.parse(store.get("semio-chat") || "[]"); return Array.isArray(h) ? h : []; }catch{ return []; } })() };
+const saveChat = () => store.set("semio-chat", JSON.stringify(chat.history.slice(-24)));
+if (chat.history.length){
+  const th0 = $("chat-thread"); th0.replaceChildren();
+  chat.history.forEach(m => { if (m.role === "user") th0.append(el("div", "msg u", m.content)); else { const d = el("div", "msg a"); d.append(md(m.content)); th0.append(d); } });
+}
 document.querySelectorAll(".uselib").forEach(c => c.addEventListener("change", () => { c.dataset.touched = 1; }));
 $("chat-in").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); $("chat-form").requestSubmit(); } });
-$("chat-new").onclick = () => { chat.history = []; $("chat-thread").replaceChildren(el("div", "empty", "Nouvelle discussion. Pose ta question.")); };
+$("chat-new").onclick = () => { chat.history = []; saveChat(); $("chat-thread").replaceChildren(el("div", "empty", "Nouvelle discussion. Pose ta question.")); };
 $("chat-stop").onclick = () => ctl?.abort();
 $("chat-form").addEventListener("submit", async ev => {
   ev.preventDefault();
@@ -796,18 +801,17 @@ $("chat-form").addEventListener("submit", async ev => {
   let full = q, hits = [];
   if ($("short-chat").checked) full += SHORT;
   if ($("lib-chat").checked && LIB.ready()){
-    hits = LIB.search(q, 4);
+    hits = await LIB.search(q, 4);
     if (hits.length) full = "Extraits de livres (à utiliser seulement s'ils répondent vraiment à la question) :\n\n" + hits.map(h => `[${h.short}, p. ${h.page}]\n${h.text.slice(0, 800)}`).join("\n\n") + "\n\n---\n\nQuestion : " + full;
   }
   let last = 0;
   try{
-    const text = await generate([sys, ...chat.history.slice(-10), user(full)], $("short-chat").checked ? 350 : 900, (t, tps) => {
+    const text = await generate([sys, ...chat.history.slice(-12), user(full)], $("short-chat").checked ? 350 : 900, (t, tps) => {
       const now = performance.now(); if (now - last < 80) return; last = now;
       a.replaceChildren(md(t)); $("chat-speed").textContent = tps.toFixed(1) + " tokens/s";
     });
     a.replaceChildren(md(text || "(pas de réponse)"));
-    if (hits.length){ const box = el("div", "srcs"); box.append(el("span", "label", "Pages consultées :")); hits.forEach(h => box.append(pageButton(h))); a.append(box); }
-    chat.history.push(user(q), asst(text));
+    if (text) { chat.history.push(user(q), asst(text)); saveChat(); }
   }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
   finally{ busy = false; $("chat-stop").hidden = true; refreshButtons(); }
 });
