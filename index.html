@@ -406,6 +406,17 @@ updateEngineUI();
 if (engine === "local" && store.get("semio-loaded") === "1") loadModel();
 
 async function genRemote(messages, maxTokens, onToken, model = engine, temperature){
+  for (let essai = 0; ; essai++){
+    try{ return await genRemote1(messages, maxTokens, onToken, model, temperature); }
+    catch(e){
+      if (e?.name === "AbortError") return "";
+      if (e?.partial) return e.partial + "\n\n_(La connexion a été coupée avant la fin de la réponse. Renvoie ta question si besoin.)_";
+      if (essai >= 1) throw new Error("Connexion au serveur Sémio impossible. Vérifie ta connexion Internet et réessaie.");
+      await new Promise(r => setTimeout(r, 1500));
+    }
+  }
+}
+async function genRemote1(messages, maxTokens, onToken, model, temperature){
   let text = "", n = 0, buf = ""; const t0 = performance.now();
   const r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature }), signal: ctl.signal });
   if (!r.ok) throw new Error("Serveur Sémio : " + r.status + " " + (await r.text()).slice(0, 200));
@@ -424,7 +435,7 @@ async function genRemote(messages, maxTokens, onToken, model = engine, temperatu
         text += piece; n++; const s = (performance.now() - t0) / 1000; onToken(text, s > 0 ? n / s : 0);
       }
     }
-  }catch(e){ if (e?.name !== "AbortError") throw e; }
+  }catch(e){ if (e?.name === "AbortError") return text; if (text) { const err = new Error("coupé"); err.partial = text; throw err; } throw e; }
   return text;
 }
 async function generate(messages, maxTokens, onToken){
@@ -867,7 +878,7 @@ $("chat-form").addEventListener("submit", async ev => {
   if ($("short-chat").checked) full += SHORT;
   if ($("lib-chat").checked && LIB.ready()){
     hits = await LIB.search(q, 4);
-    if (hits.length) full = "Extraits de livres (à utiliser seulement s'ils répondent vraiment à la question) :\n\n" + hits.map(h => `[${h.short}, p. ${h.page}]\n${h.text.slice(0, 800)}`).join("\n\n") + "\n\n---\n\nQuestion : " + full;
+    if (hits.length) full = "Extraits de livres (utilise-les seulement s'ils répondent vraiment à la question ; sinon ignore-les complètement et réponds normalement avec tes connaissances, sans dire que la réponse n'est pas dans les extraits) :\n\n" + hits.map(h => `[${h.short}, p. ${h.page}]\n${h.text.slice(0, 800)}`).join("\n\n") + "\n\n---\n\nQuestion : " + full;
   }
   let last = 0;
   try{
