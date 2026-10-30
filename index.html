@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="coi-serviceworker.js"></script>
-<title>Sémio — l'IA médicale des étudiants</title>
+<title>Sémio — l'IA médicale</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect width='34' height='34' rx='8' fill='%230b1a3a'/%3E%3Cpath d='M3 18h7l3-8 4 16 3-12 2 4h9' fill='none' stroke='%23d4af37' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<meta name="description" content="Sémio, l'IA médicale créée par YM pour les étudiants en médecine : cas cliniques, cours, mécanismes, recherche. Rapide en ligne, ou hors ligne sur ton ordinateur.">
+<meta name="description" content="Sémio, l'IA médicale créée par YM : cas cliniques, cours, mécanismes, recherche. Rapide en ligne, ou hors ligne sur ton ordinateur.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Schibsted+Grotesk:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
@@ -136,11 +136,11 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
 <header class="top">
   <div class="wrap">
     <div class="brand">
-      <span class="label">IA médicale pour étudiants en médecine</span>
+      <span class="label">L'IA médicale pour tous</span>
       <h1><svg width="34" height="22" viewBox="0 0 34 22" aria-hidden="true"><path d="M1 12h8l3-8 4 16 3-12 2 4h12" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="gold">Sémio</span><span class="by">par YM</span></h1>
       <p>Cas cliniques, cours, mécanismes, recherche, discussion libre et bibliothèque. Sémio-Pro et Sémio-2 répondent en quelques secondes ; Sémio-1 peut aussi tourner hors ligne sur ton ordinateur.</p>
     </div>
-    <p class="disclaimer">Réservé aux étudiants en médecine, à but pédagogique. Peut se tromper : vérifie toujours dans tes cours et avec ton senior. Ne remplace pas un médecin.</p>
+    <p class="disclaimer">Outil d'information et d'apprentissage. Peut se tromper : vérifie toujours auprès d'un professionnel de santé. Ne remplace pas une consultation ; en cas d'urgence, appelle le SAMU (141 au Maroc, 15 en France).</p>
   </div>
 </header>
 
@@ -394,14 +394,15 @@ async function generate(messages, maxTokens, onToken){
 }
 
 // ================= Prompts =================
-const SYSTEM = `Tu es Sémio, l'assistant médical créé par YM pour les étudiants en médecine. Tu raisonnes comme un médecin enseignant qui forme des étudiants francophones (Maroc, France). Ne te présente pas et ne parle pas de toi : réponds directement à la question. Seulement si on te demande explicitement qui tu es ou qui t'a créé, réponds que tu es Sémio, créé par YM. Tu réponds toujours en français, de façon exacte, structurée et pédagogique, en suivant les recommandations actuelles (HAS, ESC, OMS, sociétés savantes).
+const SYSTEM = `Tu es Sémio, l'assistant médical créé par YM. Tu raisonnes comme un médecin enseignant francophone (Maroc, France) et tu aides aussi bien les étudiants et les soignants que le grand public. Ne te présente pas et ne parle pas de toi : réponds directement à la question. Seulement si on te demande explicitement qui tu es ou qui t'a créé, réponds que tu es Sémio, créé par YM. Tu réponds toujours en français, de façon exacte, structurée et pédagogique, en suivant les recommandations actuelles (HAS, ESC, OMS, sociétés savantes).
 Règles :
 - N'invente jamais de chiffre, de dose ou de référence. Si tu n'es pas sûr, écris « à vérifier ».
 - Donne les doses seulement si elles sont standard ; précise « dose usuelle adulte » et rappelle les contre-indications majeures.
 - Utilise des titres « ## » et des listes « - ». Pas de tableaux.
 - Si des extraits de livres sont fournis, utilise-les seulement s'ils répondent vraiment à la question ; sinon ignore-les. Ne mentionne jamais tes sources, livres ou numéros de page dans la réponse : réponds directement.
 - Tiens compte de toute la conversation : une question de suivi (« et le traitement ? », « pourquoi ? », « et chez l'enfant ? ») porte sur le sujet dont on parlait juste avant.
-- Tu t'adresses à des étudiants, jamais à un patient qui chercherait à se soigner seul.`;
+- Adapte ton niveau : précis et technique pour un étudiant ou un soignant, simple et clair (sans jargon) pour le grand public.
+- Si la personne parle de ses propres symptômes ou de ceux d'un proche : donne des informations générales, signale clairement les signes d'alarme, et conseille de consulter un médecin (ou d'appeler le SAMU en cas d'urgence : 141 au Maroc, 15 en France). Ne pose pas de diagnostic définitif et ne prescris pas de traitement à la place d'un médecin.`;
 const sys = { role: "system", content: SYSTEM };
 const user = (t) => ({ role: "user", content: t });
 const asst = (t) => ({ role: "assistant", content: t });
