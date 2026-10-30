@@ -164,7 +164,7 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
     </div>
     <select id="engine" aria-label="Moteur de Sémio">
       <option value="pro">Sémio-Pro · rapide, en ligne</option>
-      <option value="semio2">Sémio-2 · modèle de YM, spécial QCM</option>
+      <option value="semio2">Sémio-2b · modèle de YM, spécial QCM</option>
       <option value="local">Sémio-1 · hors ligne (sur ton PC)</option>
     </select>
     <button class="btn btn-ghost" id="loadBtn" hidden>Charger Sémio-1 hors ligne</button>
@@ -364,7 +364,7 @@ function updateEngineUI(){
     $("loadBtn").hidden = localReady;
   } else {
     if (!API_URL) setModelUI("err", "Serveur Sémio en cours d'installation", "En attendant, choisis « Sémio-1 · hors ligne ».");
-    else setModelUI("ready", engine === "pro" ? "Sémio-Pro prêt · rapide" : "Sémio-2 prêt · modèle de YM", engine === "pro" ? "Réponses en quelques secondes." : "Entraîné sur 18 000 QCM : idéal pour les QCM. Pour les explications longues et les cas, préfère Sémio-Pro." + (localReady ? " Sémio-1 hors ligne est prêt en secours." : ""));
+    else setModelUI("ready", engine === "pro" ? "Sémio-Pro prêt · rapide" : "Sémio-2b prêt · modèle de YM", engine === "pro" ? "Réponses en quelques secondes." : "Entraîné sur 48 000 QCM (ECN, FMPC, darija) : idéal pour les QCM. Pour les explications longues et les cas, préfère Sémio-Pro." + (localReady ? " Sémio-1 hors ligne est prêt en secours." : ""));
     $("loadBtn").hidden = true;
   }
   ready = engine === "local" ? localReady : !!API_URL;
