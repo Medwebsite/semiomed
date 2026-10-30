@@ -5,39 +5,38 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="coi-serviceworker.js"></script>
 <title>Sémio — l'IA médicale des étudiants</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect width='34' height='34' rx='8' fill='%23c9365a'/%3E%3Cpath d='M3 18h7l3-8 4 16 3-12 2 4h9' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<meta name="description" content="Sémio, l'IA médicale créée par YM pour les étudiants en médecine : cas cliniques, cours, mécanismes, recherche. Elle tourne entièrement dans ton navigateur.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect width='34' height='34' rx='8' fill='%230b1a3a'/%3E%3Cpath d='M3 18h7l3-8 4 16 3-12 2 4h9' fill='none' stroke='%23d4af37' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<meta name="description" content="Sémio, l'IA médicale créée par YM pour les étudiants en médecine : cas cliniques, cours, mécanismes, recherche. Rapide en ligne, ou hors ligne sur ton ordinateur.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Schibsted+Grotesk:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 :root{
-  --bg:#f3f5f8; --paper:#fff; --ink:#14213a; --muted:#5a6680; --line:#dde2ea;
-  --grid:rgba(214,72,104,.10); --accent:#c9365a; --accent-ink:#fff; --accent-soft:#fbe7ec;
-  --ok:#1f7a5a; --ok-soft:#e2f3ec; --warn:#a86300; --warn-soft:#fdf0db; --crit:#b3202f; --crit-soft:#fbe3e5;
-  --field:#f7f9fb; --focus:#2f6fdc;
+  --bg:#081226; --paper:#0f1c38; --ink:#eef1f8; --muted:#9eabc6; --line:#24365e;
+  --grid:rgba(212,175,55,.07); --accent:#d4af37; --accent-2:#f1d77e; --accent-ink:#0a1428; --accent-soft:rgba(212,175,55,.13);
+  --ok:#5fd0a3; --ok-soft:#10302a; --warn:#f2b25c; --warn-soft:#33270f; --crit:#ff8a8a; --crit-soft:#3a1720;
+  --field:#0b1730; --focus:#f1d77e;
+  --gold-grad:linear-gradient(180deg,#ecd06b 0%,#d4af37 55%,#b8902a 100%);
+  --f-title:"Playfair Display",Georgia,serif;
   --f-display:"Schibsted Grotesk",system-ui,sans-serif;
   --f-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
-  --r:10px; color-scheme:light;
+  --r:12px; color-scheme:dark;
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#0d1422; --paper:#141d2f; --ink:#e6ebf4; --muted:#93a0b8; --line:#263249;
-  --grid:rgba(240,110,140,.08); --accent:#f0698b; --accent-ink:#1a0a10; --accent-soft:#3a1b26;
-  --ok:#5fd0a3; --ok-soft:#123327; --warn:#f2b25c; --warn-soft:#3a2a10; --crit:#ff7a85; --crit-soft:#3d1519;
-  --field:#0f1828; --focus:#7aa7ff; color-scheme:dark}}
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body)}
+body{background:radial-gradient(1200px 600px at 85% -10%,rgba(212,175,55,.10),transparent 60%),radial-gradient(900px 500px at -10% 10%,rgba(46,84,160,.25),transparent 60%),var(--bg);background-attachment:fixed;color:var(--ink);font:16px/1.55 var(--f-body);min-height:100vh}
 .wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header.top{background-color:var(--paper);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:12px 12px;border-bottom:1px solid var(--line)}
+header.top{background-color:#0a1834;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px),linear-gradient(135deg,#0d2047,#070f22);background-size:14px 14px,14px 14px,auto;border-bottom:1px solid rgba(212,175,55,.45);box-shadow:0 1px 0 rgba(212,175,55,.15),0 12px 30px rgba(0,0,0,.25)}
 header.top .wrap{padding-block:20px 16px;display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
-.brand h1{font:800 clamp(28px,4vw,38px)/1 var(--f-display);letter-spacing:-.02em;margin:0;display:flex;align-items:center;gap:10px}
+.brand h1{font:700 clamp(32px,4.6vw,46px)/1 var(--f-title);letter-spacing:.01em;margin:0;display:flex;align-items:center;gap:12px}
+.brand h1 .gold{background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand .by{font:600 13px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:5px 9px;align-self:center}
 .brand p{margin:4px 0 0;color:var(--muted);max-width:62ch}
-.label{font:600 12px/1.2 var(--f-body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.label{font:600 12px/1.2 var(--f-body);text-transform:uppercase;letter-spacing:.14em;color:var(--accent)}
 .disclaimer{font-size:13px;color:var(--muted);max-width:46ch;border-left:2px solid var(--accent);padding-left:10px;margin:0}
 
 /* model bar */
-.modelbar{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-top:18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.modelbar{background:linear-gradient(180deg,rgba(255,255,255,.02),transparent),var(--paper);box-shadow:0 8px 24px rgba(0,0,0,.2);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-top:18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--muted);flex:none}
 .dot.ready{background:var(--ok)} .dot.loading{background:var(--warn);animation:pulse 1s infinite alternate} .dot.err{background:var(--crit)}
 @keyframes pulse{to{opacity:.35}}
@@ -46,26 +45,30 @@ header.top .wrap{padding-block:20px 16px;display:flex;gap:16px;align-items:flex-
 .mstatus strong{display:block}
 .mstatus span{color:var(--muted);font-size:14px}
 .bar{height:6px;background:var(--field);border-radius:3px;overflow:hidden;margin-top:6px}
-.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.bar i{display:block;height:100%;width:0;background:var(--gold-grad);transition:width .2s}
 select,input[type=text],input[type=number],textarea{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+select:hover,input[type=text]:hover,input[type=number]:hover,textarea:hover{border-color:rgba(212,175,55,.45)}
+::placeholder{color:#6f7d9c}
 textarea{resize:vertical}
 .modelbar select{width:auto}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .btn{font:700 15px/1 var(--f-display);border-radius:8px;padding:11px 16px;cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;gap:8px;justify-content:center;white-space:nowrap}
-.btn-primary{background:var(--accent);color:var(--accent-ink)}
-.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line)}
-.btn-ghost:hover{background:var(--field)}
+.btn-primary{background:var(--gold-grad);color:var(--accent-ink);box-shadow:0 4px 14px rgba(212,175,55,.25),inset 0 1px 0 rgba(255,255,255,.35)}
+.btn-primary:hover:not([disabled]){filter:brightness(1.06)}
+.btn-ghost{background:transparent;color:var(--accent-2);border-color:rgba(212,175,55,.45)}
+.btn-ghost:hover{background:var(--accent-soft)}
 .btn[disabled]{opacity:.5;cursor:not-allowed}
 .btn-sm{font-size:13px;padding:7px 10px}
 
 /* tabs */
 .tabs{display:flex;gap:4px;margin-top:18px;border-bottom:1px solid var(--line);overflow-x:auto}
 .tab{font:700 15px/1 var(--f-display);padding:12px 14px;border:0;background:none;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
-.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected=true]{color:var(--accent-2);border-bottom-color:var(--accent)}
 .panel{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:20px;margin-top:18px;align-items:start}
 @media (max-width:900px){.panel{grid-template-columns:1fr}}
-.sheet{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
-.sheet h2{font:700 18px/1.2 var(--f-display);margin:0}
+.sheet{background:linear-gradient(180deg,rgba(255,255,255,.02),transparent),var(--paper);box-shadow:0 8px 24px rgba(0,0,0,.2);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.sheet h2{font:700 21px/1.2 var(--f-title);margin:0;color:var(--accent-2)}
 .sheet p.hint{margin:0;color:var(--muted);font-size:14px}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .field label{font-size:13px;color:var(--muted);font-weight:600}
@@ -78,14 +81,15 @@ textarea{resize:vertical}
 .chip:hover{border-color:var(--accent);color:var(--accent)}
 
 /* output */
-.out{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;min-width:0;display:flex;flex-direction:column;gap:14px}
+.out{background:linear-gradient(180deg,rgba(255,255,255,.02),transparent),var(--paper);box-shadow:0 8px 24px rgba(0,0,0,.2);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;min-width:0;display:flex;flex-direction:column;gap:14px}
 .out-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
 .speed{font:600 12px/1 var(--f-mono);color:var(--muted)}
 .thread{display:flex;flex-direction:column;gap:12px}
 .msg{border-radius:10px;padding:12px 14px;overflow-wrap:anywhere;min-width:0}
-.msg.u{background:var(--accent-soft);align-self:flex-end;max-width:92%;font-size:15px}
+.msg.u{background:var(--accent-soft);border:1px solid rgba(212,175,55,.35);align-self:flex-end;max-width:92%;font-size:15px}
 .msg.a{background:var(--field);border:1px solid var(--line)}
-.msg.a h2,.msg.a h3,.msg.a h4{font:700 16px/1.25 var(--f-display);margin:14px 0 6px}
+.msg.a h2,.msg.a h3,.msg.a h4{font:700 16px/1.25 var(--f-display);margin:14px 0 6px;color:var(--accent-2)}
+.msg.a strong{color:#fff}
 .msg.a h2:first-child,.msg.a h3:first-child{margin-top:0}
 .msg.a p{margin:0 0 8px;max-width:72ch}
 .msg.a ul,.msg.a ol{margin:0 0 8px;padding-left:20px}
@@ -117,11 +121,11 @@ footer{margin:28px 0 40px;font-size:13px;color:var(--muted);max-width:85ch}
 .hits .snip{font-size:14px;color:var(--ink)}
 .srcs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 dialog.viewer{border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);padding:0;width:min(900px,96vw);max-height:92vh}
-dialog.viewer::backdrop{background:rgba(10,15,30,.6)}
+dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
 .vhead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .vbody{overflow:auto;max-height:calc(92vh - 60px);padding:10px;text-align:center}
 .vbody canvas{max-width:100%;height:auto;background:#fff}
-.chatwrap{margin-top:18px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-height:420px}
+.chatwrap{margin-top:18px;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent),var(--paper);box-shadow:0 8px 24px rgba(0,0,0,.2);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-height:420px}
 .chatwrap .thread{flex:1}
 .chatopts{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
 .chatwrap .composer textarea{min-height:56px}
@@ -132,9 +136,9 @@ dialog.viewer::backdrop{background:rgba(10,15,30,.6)}
 <header class="top">
   <div class="wrap">
     <div class="brand">
-      <span class="label">IA médicale · 100 % dans ton navigateur</span>
-      <h1><svg width="34" height="22" viewBox="0 0 34 22" aria-hidden="true"><path d="M1 12h8l3-8 4 16 3-12 2 4h12" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Sémio</h1>
-      <p>Cas cliniques, cours, mécanismes, recherche et ta bibliothèque privée. Le modèle Sémio-1 tourne directement sur ton ordinateur : pas de serveur, rien n'est envoyé.</p>
+      <span class="label">IA médicale pour étudiants en médecine</span>
+      <h1><svg width="34" height="22" viewBox="0 0 34 22" aria-hidden="true"><path d="M1 12h8l3-8 4 16 3-12 2 4h12" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="gold">Sémio</span><span class="by">par YM</span></h1>
+      <p>Cas cliniques, cours, mécanismes, recherche, discussion libre et bibliothèque. Sémio-Pro et Sémio-2 répondent en quelques secondes ; Sémio-1 peut aussi tourner hors ligne sur ton ordinateur.</p>
     </div>
     <p class="disclaimer">Réservé aux étudiants en médecine, à but pédagogique. Peut se tromper : vérifie toujours dans tes cours et avec ton senior. Ne remplace pas un médecin.</p>
   </div>
