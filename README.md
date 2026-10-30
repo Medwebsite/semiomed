@@ -43,7 +43,7 @@ Les échantillons vont de 60 à 170 questions selon le test et le moteur.
 - `index.html` : tout le site (interface, onglets, appels aux moteurs).
 - `coi-serviceworker.js` : active l'isolation nécessaire au mode hors ligne (Sémio-1).
 - `training/semio2_train.py` : entraînement de Sémio-2.
-- `training/semio2b_train.py` : entraînement de Sémio-2b (avec les données Hakim).
+- `training/semio2b_train.py` : entraînement de Sémio-2b.
 - `training/semio1_finetune.ipynb` : entraînement de Sémio-1.
 
 ## Modèles et données
@@ -55,10 +55,10 @@ Les échantillons vont de 60 à 170 questions selon le test et le moteur.
 Données d'entraînement, avec nos remerciements :
 - [MediQAl](https://huggingface.co/datasets/ANR-MALADES/MediQAl) (CC BY 4.0)
 - [FrenchMedMCQA](https://huggingface.co/datasets/uy-rrodriguez/FrenchMedMCQA-extended) (Apache 2.0)
-- [Hakim-Decider data](https://huggingface.co/datasets/Jip7e/hakim-decider-data) (CC BY-NC 4.0, utilisée seulement pour Sémio-2b, à usage non commercial)
+- [Jip7e/hakim-decider-data](https://huggingface.co/datasets/Jip7e/hakim-decider-data) (CC BY-NC 4.0, pour Sémio-2b uniquement, usage non commercial)
 
 Modèles de base : Gemma 4 (Google), Mistral-7B-Instruct-v0.2 (Mistral AI).
 
 ## Licence et usage
 
-Projet pédagogique et gratuit. Sémio-2b ne peut pas être utilisé commercialement, à cause de la licence des données Hakim.
+Projet pédagogique et gratuit. Sémio-2b ne peut pas être utilisé commercialement, à cause de la licence d'une partie de ses données d'entraînement.
