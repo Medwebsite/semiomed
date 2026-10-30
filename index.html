@@ -231,7 +231,7 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
       <h2>Interpréter un examen</h2>
       <p class="hint">Radio, scanner, IRM, ECG, échographie, bilan biologique… Ajoute une photo ou une capture de l'examen (ou un compte rendu en PDF) : Sémio-Pro l'analyse de façon systématique et t'explique tout en détail.</p>
       <div class="row">
-        <div class="field"><label for="x-type">Type d'examen</label><select id="x-type"><option>Radiographie</option><option>Scanner (TDM)</option><option>IRM</option><option>ECG</option><option>Échographie</option><option>Biologie / bilan sanguin</option><option>Autre</option></select></div>
+        <div class="field"><label for="x-type">Type d'examen</label><select id="x-type"><option value="auto" selected>Détection automatique</option><option>Radiographie</option><option>Scanner (TDM)</option><option>IRM</option><option>ECG</option><option>Échographie</option><option>Biologie / bilan sanguin</option><option>Autre</option></select></div>
         <div class="field"><label for="x-age">Âge</label><input type="number" id="x-age" min="0" max="120"></div>
         <div class="field"><label for="x-sexe">Sexe</label><select id="x-sexe"><option value="">—</option><option>Homme</option><option>Femme</option></select></div>
       </div>
@@ -941,36 +941,80 @@ async function runExam(shown, content, imgs){
   if (imgs?.length){ const m = el("div", "mini"); imgs.forEach(src => { const im = new Image(); im.src = src; im.alt = ""; m.append(im); }); u.append(m); }
   th.append(u);
   const a = el("div", "msg a", "Analyse de l'examen…"); th.append(a); a.scrollIntoView({ block: "nearest" });
-  const userMsg = { role: "user", content };
   ctl = new AbortController(); let last = 0;
   try{
+    if (typeof content === "function"){
+      const r = await content(a); content = r.content;
+      if (r.note) th.insertBefore(el("div", "banner info", r.note), a);
+      if (ctl.signal.aborted) throw new DOMException("stop", "AbortError");
+      a.textContent = "Interprétation en cours…";
+    }
+    const userMsg = { role: "user", content };
     const text = await genRemote([sys, ...exam.history.slice(-8), userMsg], 1600, (t, tps) => {
       const now = performance.now(); if (now - last < 80) return; last = now;
       a.replaceChildren(md(t)); $("x-speed").textContent = tps.toFixed(1) + " tokens/s";
     }, "pro");
     a.replaceChildren(md(text || "(pas de réponse)"));
     if (text){ exam.history.push(userMsg, asst(text)); $("x-follow").hidden = false; }
-  }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
+  }catch(err){ a.replaceChildren(err?.name === "AbortError" ? el("div", "empty", "Arrêté.") : el("div", "banner err", "Erreur : " + err.message)); }
   finally{ busy = false; $("x-run").disabled = false; $("x-stop").hidden = true; refreshButtons(); }
 }
-$("f-exam").addEventListener("submit", ev => {
-  ev.preventDefault();
-  const type = $("x-type").value, age = $("x-age").value, sexe = $("x-sexe").value, ctx = $("x-ctx").value.trim(), q = $("x-q").value.trim();
-  if (!exam.imgs.length && !ctx){ drawThumbs("Ajoute au moins une image de l'examen (ou colle le compte rendu dans le contexte)."); return; }
-  const patient = [age ? age + " ans" : "", sexe].filter(Boolean).join(", ") || "non précisé";
-  const prompt = `Interprète en détail cet examen : ${type}.
+const quickAsk = async (content, max) => (await genRemote([sys, { role: "user", content }], max, () => {}, "pro")).trim();
+function typeFrom(t){
+  t = (t || "").toLowerCase();
+  if (/ecg|électrocardio|electrocardio/.test(t)) return "ECG";
+  if (/scanner|tdm|tomodensit/.test(t)) return "Scanner (TDM)";
+  if (/irm/.test(t)) return "IRM";
+  if (/écho|echo/.test(t)) return "Échographie";
+  if (/biolog|bilan|sang|labo/.test(t)) return "Biologie / bilan sanguin";
+  if (/radio/.test(t)) return "Radiographie";
+  return "";
+}
+const ECG_MEASURE = `Tu regardes un ECG. NE CONCLUS RIEN, ne donne aucun diagnostic. Relève seulement, de façon factuelle :
+1. Les mesures automatiques imprimées sur le tracé (s'il y en a).
+2. Rythme : y a-t-il une onde P avant chaque QRS ? Les intervalles RR sont-ils réguliers ?
+3. Fréquence : nombre de grands carreaux entre deux ondes R (FC = 300 / ce nombre).
+4. Polarité nette du QRS en DI, DII et aVF (positif, négatif ou isodiphasique).
+5. Largeur du QRS en petits carreaux (1 petit carreau = 40 ms ; moins de 3 petits carreaux = QRS fin).
+6. Aspect du QRS en V1 et en V6 (rS, RSR', QS, R exclusif, encoche ?).
+7. Segment ST : sus- ou sous-décalage d'au moins 1 petit carreau ? Dans quelles dérivations ?
+8. Ondes T négatives : dans quelles dérivations ?
+9. PR et QT en petits carreaux.
+Si un point n'est pas lisible, écris « illisible ».`;
+function examPrompt(type, patient, ctx, q, facts){
+  return `Interprète en détail cet examen : ${type}.
 Patient : ${patient}.
 Contexte clinique : ${ctx || "non précisé"}.
-${q ? "Question posée : " + q + "\n" : ""}
-Méthode : ${GUIDE[type] || GUIDE.Autre}.
+${q ? "Question posée : " + q + "\n" : ""}${facts ? "Relevé factuel du tracé fait juste avant (vérifie-le sur l'image et corrige-le si besoin) :\n" + facts + "\n\n" : ""}Méthode : ${GUIDE[type] || GUIDE.Autre}.
 RÈGLE PRINCIPALE : un examen normal est fréquent, ne cherche pas une maladie à tout prix. N'annonce une anomalie que si elle est clairement visible ET remplit un critère précis ; pour chaque anomalie, donne le critère et l'endroit exact où tu la vois. Si un élément est difficile à évaluer sur l'image, écris « non évaluable » au lieu de supposer une anomalie. Si tout ce qui est évaluable est normal, conclus clairement que l'examen est normal. Ne tiens pas compte des variantes de la normale.
 Commence ta réponse par une ligne en gras : **Conclusion : examen normal**, **Conclusion : examen anormal** (suivi de l'anomalie principale) ou **Conclusion : non interprétable** (et pourquoi).
 Structure ensuite ta réponse avec ces titres : ## Qualité et technique, ## Lecture systématique, ## Anomalies observées (écris « Aucune » s'il n'y en a pas), ## Interprétation, ## Diagnostics différentiels (seulement si anormal), ## Conduite à tenir et examens complémentaires, ## Points à retenir.
-Décris uniquement ce que tu vois vraiment sur l'image. Si l'image est floue, coupée, trop petite ou ne correspond pas au type indiqué, dis-le. Termine par une phrase rappelant que cette interprétation doit être confirmée par un médecin (radiologue, cardiologue ou biologiste selon l'examen).`;
-  const imgs = exam.imgs.slice();
-  const content = [{ type: "text", text: prompt }, ...imgs.map(url => ({ type: "image_url", image_url: { url } }))];
+Décris uniquement ce que tu vois vraiment sur l'image. Si l'image est floue, coupée ou trop petite, dis-le. Termine par une phrase rappelant que cette interprétation doit être confirmée par un médecin (radiologue, cardiologue ou biologiste selon l'examen).`;
+}
+$("f-exam").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const chosen = $("x-type").value, age = $("x-age").value, sexe = $("x-sexe").value, ctx = $("x-ctx").value.trim(), q = $("x-q").value.trim();
+  if (!exam.imgs.length && !ctx){ drawThumbs("Ajoute au moins une image de l'examen (ou colle le compte rendu dans le contexte)."); return; }
+  const patient = [age ? age + " ans" : "", sexe].filter(Boolean).join(", ") || "non précisé";
+  const imgs = exam.imgs.slice(); const imgParts = imgs.map(url => ({ type: "image_url", image_url: { url } }));
   exam.history = []; $("x-thread").replaceChildren();
-  runExam(`${type}${q ? " · " + q : ""}${imgs.length ? " (" + imgs.length + " image" + (imgs.length > 1 ? "s" : "") + ")" : ""}`, content, imgs);
+  const label = chosen === "auto" ? "Examen" : chosen;
+  runExam(`${label}${q ? " · " + q : ""}${imgs.length ? " (" + imgs.length + " image" + (imgs.length > 1 ? "s" : "") + ")" : ""}`, async (status) => {
+    let type = chosen === "auto" ? "" : chosen, note = "";
+    if (imgs.length){
+      status.textContent = "Identification du type d'examen…";
+      const det = typeFrom(await quickAsk([{ type: "text", text: "Quel est le type de cet examen médical ? Réponds par un seul mot parmi : Radiographie, Scanner, IRM, ECG, Échographie, Biologie, Autre." }, imgParts[0]], 12));
+      if (det && type && det !== type) note = `Tu as choisi « ${type} », mais l'image ressemble à : ${det}. Sémio l'analyse donc comme « ${det} ».`;
+      if (det) type = det;
+    }
+    if (!type) type = "Autre";
+    let facts = "";
+    if (type === "ECG" && imgs.length){
+      status.textContent = "Mesure du tracé ECG (étape 1/2)…";
+      facts = await quickAsk([{ type: "text", text: ECG_MEASURE }, ...imgParts], 700);
+    }
+    return { content: [{ type: "text", text: examPrompt(type, patient, ctx, q, facts) }, ...imgParts], note };
+  }, imgs);
 });
 $("x-follow").addEventListener("submit", ev => {
   ev.preventDefault(); const q = $("x-fin").value.trim(); if (!q) return; $("x-fin").value = "";
