@@ -130,6 +130,7 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
 .chatopts{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
 .chatwrap .composer textarea{min-height:56px}
 .badge{font:600 11px/1 var(--f-body);text-transform:uppercase;letter-spacing:.06em;padding:3px 6px;border-radius:4px;background:var(--ok-soft);color:var(--ok);margin-left:6px}
+.col{display:flex;flex-direction:column;gap:20px;min-width:0}
 .drop{border:1.5px dashed rgba(212,175,55,.55);border-radius:10px;padding:16px;text-align:center;color:var(--muted);background:var(--field);cursor:pointer}
 .drop:hover,.drop.over{background:var(--accent-soft);color:var(--ink)}
 .drop strong{color:var(--accent-2)}
@@ -250,6 +251,7 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
   </section>
 
   <section class="panel" data-panel="cours" hidden>
+    <div class="col">
     <form class="sheet" id="f-cours" autocomplete="off">
       <h2>Explique-moi un cours</h2>
       <p class="hint">Un sujet, et Sémio rédige un cours structuré : définition, physiopathologie, clinique, diagnostic, traitement, points clés.</p>
@@ -266,6 +268,21 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
       <label class="chk"><input type="checkbox" id="short-cours"> Réponse courte (plus rapide)</label>
       <div class="actions"><button class="btn btn-primary run" type="submit">Rédiger le cours</button></div>
     </form>
+    <form class="sheet" id="f-cpdf" autocomplete="off">
+      <h2>Explique-moi mon cours (PDF)</h2>
+      <p class="hint">Dépose ton cours (PDF, diapos exportées en PDF, ou photos de pages) : Sémio le reprend page par page et t'explique tout en détail, comme un professeur particulier.</p>
+      <label class="drop" id="cp-drop" for="cp-file"><strong>Choisir mon cours</strong><br>PDF ou images · 60 pages maximum</label>
+      <input type="file" id="cp-file" accept="application/pdf,image/*" multiple hidden>
+      <div class="hint" id="cp-info"></div>
+      <div class="row">
+        <div class="field"><label for="cp-mode">Type d'explication</label><select id="cp-mode"><option value="detail">Page par page, en détail</option><option value="synthese">Synthèse structurée du cours</option></select></div>
+        <div class="field"><label for="cp-range">Pages (facultatif)</label><input type="text" id="cp-range" placeholder="ex. 1-10"></div>
+      </div>
+      <label class="chk"><input type="checkbox" id="cp-img"> Lire aussi les schémas et images (plus lent)</label>
+      <p class="hint">Le niveau choisi plus haut est utilisé. Ton cours est envoyé à Sémio uniquement pour l'explication.</p>
+      <div class="actions"><button class="btn btn-primary run" type="submit">Expliquer mon cours</button></div>
+    </form>
+    </div>
     <div class="out" data-out="cours"></div>
   </section>
 
@@ -857,7 +874,7 @@ const GUIDE = {
   "Radiographie": "vérifie d'abord l'identification de la région et la qualité (incidence, pénétration, inspiration, rotation), puis lis de façon systématique : os et articulations, parties molles, et pour un thorax : trachée, médiastin, silhouette cardiaque (index cardiothoracique), hiles, coupoles, culs-de-sac, plèvre, parenchyme zone par zone",
   "Scanner (TDM)": "précise la région, le plan de coupe, l'injection ou non et la fenêtre (parenchymateuse, médiastinale, osseuse, cérébrale), puis lis organe par organe avec les densités",
   "IRM": "précise la région, le plan et la séquence (T1, T2, FLAIR, diffusion, injection), puis décris les signaux organe par organe",
-  "ECG": "lis dans l'ordre : vitesse et étalonnage, rythme (sinusal ou non), fréquence (calcule-la), axe, onde P, PR, QRS (durée, morphologie, blocs, ondes Q), segment ST (sus ou sous-décalage, territoire et miroir), onde T, QT/QTc, puis synthèse",
+  "ECG": "lis d'abord les mesures automatiques imprimées sur le tracé si elles existent (FC, PR, QRS, QT/QTc, axe). Puis, dans l'ordre : vitesse et étalonnage, rythme, fréquence, axe, onde P, PR, QRS, segment ST, onde T, QT/QTc. Valeurs normales chez l'adulte : FC 60 à 100/min ; PR 120 à 200 ms ; QRS < 120 ms ; QTc < 450 ms (homme) ou < 460 ms (femme) ; axe entre -30° et +90° ; ST isoélectrique (sus-décalage < 1 mm, jusqu'à 2 mm en V2-V3 chez l'homme jeune) ; ondes T positives sauf en aVR (et parfois en V1 ou DIII). Variantes normales à NE PAS considérer comme pathologiques : arythmie sinusale respiratoire, bradycardie sinusale modérée du sportif, repolarisation précoce du sujet jeune, onde T négative isolée en V1 ou DIII, petite onde Q fine en DIII ou aVR, aspect rSr' en V1 avec QRS < 120 ms. Chez l'enfant, utilise les normes pédiatriques (FC plus rapide, T négatives en V1-V3 normales)",
   "Échographie": "précise l'organe, la sonde et la coupe, puis décris échogénicité, taille, contours, structures et éventuels flux Doppler",
   "Biologie / bilan sanguin": "relève chaque valeur avec son unité et la norme, signale ce qui est anormal (haut ou bas), regroupe par système (NFS, ionogramme, fonction rénale, bilan hépatique, inflammation, hémostase…) et interprète l'ensemble",
   "Autre": "identifie d'abord de quel examen il s'agit, puis lis-le de façon systématique"
@@ -946,8 +963,10 @@ Patient : ${patient}.
 Contexte clinique : ${ctx || "non précisé"}.
 ${q ? "Question posée : " + q + "\n" : ""}
 Méthode : ${GUIDE[type] || GUIDE.Autre}.
-Structure ta réponse avec ces titres : ## Qualité et technique, ## Lecture systématique, ## Anomalies observées, ## Interprétation et diagnostic le plus probable, ## Diagnostics différentiels, ## Conduite à tenir et examens complémentaires, ## Points à retenir.
-Décris uniquement ce que tu vois vraiment sur l'image et dis clairement quand un élément n'est pas visible ou pas évaluable. Si l'image est floue, coupée, trop petite ou ne correspond pas au type indiqué, dis-le. Termine par une phrase rappelant que cette interprétation doit être confirmée par un médecin (radiologue, cardiologue ou biologiste selon l'examen).`;
+RÈGLE PRINCIPALE : un examen normal est fréquent, ne cherche pas une maladie à tout prix. N'annonce une anomalie que si elle est clairement visible ET remplit un critère précis ; pour chaque anomalie, donne le critère et l'endroit exact où tu la vois. Si un élément est difficile à évaluer sur l'image, écris « non évaluable » au lieu de supposer une anomalie. Si tout ce qui est évaluable est normal, conclus clairement que l'examen est normal. Ne tiens pas compte des variantes de la normale.
+Commence ta réponse par une ligne en gras : **Conclusion : examen normal**, **Conclusion : examen anormal** (suivi de l'anomalie principale) ou **Conclusion : non interprétable** (et pourquoi).
+Structure ensuite ta réponse avec ces titres : ## Qualité et technique, ## Lecture systématique, ## Anomalies observées (écris « Aucune » s'il n'y en a pas), ## Interprétation, ## Diagnostics différentiels (seulement si anormal), ## Conduite à tenir et examens complémentaires, ## Points à retenir.
+Décris uniquement ce que tu vois vraiment sur l'image. Si l'image est floue, coupée, trop petite ou ne correspond pas au type indiqué, dis-le. Termine par une phrase rappelant que cette interprétation doit être confirmée par un médecin (radiologue, cardiologue ou biologiste selon l'examen).`;
   const imgs = exam.imgs.slice();
   const content = [{ type: "text", text: prompt }, ...imgs.map(url => ({ type: "image_url", image_url: { url } }))];
   exam.history = []; $("x-thread").replaceChildren();
@@ -956,6 +975,102 @@ Décris uniquement ce que tu vois vraiment sur l'image et dis clairement quand u
 $("x-follow").addEventListener("submit", ev => {
   ev.preventDefault(); const q = $("x-fin").value.trim(); if (!q) return; $("x-fin").value = "";
   runExam(q, q, null);
+});
+
+// ================= Cours en PDF =================
+const cpdf = { name: "", pages: [], busy: false };
+async function renderPage(page, maxSide){
+  const v0 = page.getViewport({ scale: 1 });
+  const vp = page.getViewport({ scale: Math.min(2.5, maxSide / Math.max(v0.width, v0.height)) });
+  const c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+  const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: g, viewport: vp }).promise; return c.toDataURL("image/jpeg", 0.82);
+}
+async function loadCourse(files){
+  const info = $("cp-info"); cpdf.pages = []; cpdf.name = files.map(f => f.name.replace(/\.[^.]+$/, "")).join(", ");
+  try{
+    for (const f of files){
+      if (f.type === "application/pdf"){
+        const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise;
+        for (let p = 1; p <= pdf.numPages && cpdf.pages.length < 60; p++){
+          info.textContent = `Lecture de « ${f.name} » : page ${p} / ${pdf.numPages}…`;
+          const page = await pdf.getPage(p); const tc = await page.getTextContent();
+          const text = tc.items.map(i => i.str + (i.hasEOL ? "\n" : " ")).join("").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+          cpdf.pages.push({ n: cpdf.pages.length + 1, text, page });
+        }
+      } else if (f.type.startsWith("image/")){
+        const [img] = await fileToImages(f); cpdf.pages.push({ n: cpdf.pages.length + 1, text: "", img });
+      }
+    }
+    const scanned = cpdf.pages.filter(p => !p.img && p.text.length < 200).length;
+    info.textContent = cpdf.pages.length ? `« ${cpdf.name} » : ${cpdf.pages.length} page(s) prête(s)` + (scanned ? ` (dont ${scanned} surtout en images : Sémio les regardera comme des images)` : "") + "." : "Aucune page lisible dans ce fichier.";
+  }catch(err){ info.textContent = "Impossible de lire ce fichier : " + err.message; cpdf.pages = []; }
+}
+$("cp-file").addEventListener("change", async e => { const fs = [...e.target.files]; e.target.value = ""; if (fs.length) await loadCourse(fs); });
+const cdrop = $("cp-drop");
+["dragenter", "dragover"].forEach(t => cdrop.addEventListener(t, e => { e.preventDefault(); cdrop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => cdrop.addEventListener(t, e => { e.preventDefault(); cdrop.classList.remove("over"); }));
+cdrop.addEventListener("drop", e => { const fs = [...(e.dataTransfer?.files || [])]; if (fs.length) loadCourse(fs); });
+function pageRange(n){
+  const m = ($("cp-range").value || "").match(/(\d+)\s*(?:[-àa]\s*(\d+))?/);
+  if (!m) return [1, n]; const a = Math.max(1, +m[1]), b = Math.min(n, +(m[2] || m[1])); return a <= b ? [a, b] : [1, n];
+}
+$("f-cpdf").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  if (!ready || busy) return;
+  if (!cpdf.pages.length){ $("cp-info").textContent = "Choisis d'abord ton cours (PDF ou images)."; return; }
+  const [a, b] = pageRange(cpdf.pages.length); const sel = cpdf.pages.slice(a - 1, b);
+  const mode = $("cp-mode").value, withImg = $("cp-img").checked, niv = $("co-niv").value;
+  busy = true; refreshButtons();
+  const s = state.cours; const thread = threadFor("cours"); s.history = []; thread.replaceChildren();
+  const stop = s.composer.querySelector(".stop"); stop.hidden = false;
+  const speed = s.out.querySelector(".speed");
+  thread.append(el("div", "msg u", `Mon cours : ${cpdf.name} · pages ${a} à ${b} · ${mode === "detail" ? "explication page par page" : "synthèse"}`));
+  ctl = new AbortController(); const signal = ctl.signal;
+  const pageImg = async (p) => p.img || (p.page ? (p.img = await renderPage(p.page, 1400)) : null);
+  // Lots de pages
+  const batches = []; let cur = [], chars = 0, imgs = 0;
+  for (const p of sel){
+    const needImg = withImg || (!p.img && p.text.length < 200) || !!p.img;
+    const len = Math.min(p.text.length, 3500);
+    if (cur.length && (cur.length >= (mode === "detail" ? 4 : 12) || chars + len > (mode === "detail" ? 9000 : 14000) || (needImg && imgs >= 4))){ batches.push(cur); cur = []; chars = 0; imgs = 0; }
+    cur.push({ p, needImg }); chars += len; if (needImg) imgs++;
+  }
+  if (cur.length) batches.push(cur);
+  const all = sel.map(p => `[Page ${p.n}]\n${p.text.slice(0, 3500)}`).join("\n\n");
+  let last = 0, failed = false;
+  try{
+    for (let i = 0; i < batches.length && !signal.aborted; i++){
+      const bt = batches[i]; const first = bt[0].p.n, lastP = bt[bt.length - 1].p.n;
+      const a2 = el("div", "msg a", `Lecture des pages ${first} à ${lastP}… (${i + 1}/${batches.length})`); thread.append(a2);
+      const parts = []; const images = [];
+      for (const { p, needImg } of bt){
+        parts.push(`[Page ${p.n}]\n${p.text.slice(0, 3500) || "(page surtout visuelle : voir l'image jointe)"}`);
+        if (needImg){ const im = await pageImg(p); if (im) images.push(im); }
+      }
+      const intro = mode === "detail"
+        ? `Voici les pages ${first} à ${lastP} du cours « ${cpdf.name} » d'un étudiant (niveau : ${niv}). Explique-les en détail, page par page, comme un professeur qui reprend le cours avec lui.
+Pour chaque page : un titre « ## Page N : sujet de la page », puis explique chaque notion avec des mots simples, développe les abréviations, donne le mécanisme (le « pourquoi »), ajoute un exemple clinique quand c'est utile, et signale ce qui tombe souvent à l'examen. N'écris pas une simple copie du texte : explique-le. Si une page est vide ou sans contenu utile (titre, sommaire, remerciements), dis-le en une ligne. Si une notion te paraît fausse ou dépassée, signale-le poliment.${images.length ? " Les images jointes sont les pages elles-mêmes (schémas, tableaux, figures) : décris et explique aussi leurs schémas." : ""}`
+        : `Voici les pages ${first} à ${lastP} du cours « ${cpdf.name} » d'un étudiant (niveau : ${niv}). Fais-en une synthèse structurée et expliquée : les notions principales avec leur explication, les mécanismes, les points cliniques et ce qui tombe à l'examen. Utilise des titres « ## » et des listes. N'écris pas une simple copie : explique.${images.length ? " Les images jointes sont des pages du cours : tiens compte de leurs schémas." : ""}`;
+      const text = intro + "\n\nContenu du cours :\n\n" + parts.join("\n\n");
+      const content = images.length ? [{ type: "text", text }, ...images.map(url => ({ type: "image_url", image_url: { url } }))] : text;
+      const onTok = (t, tps) => { const now = performance.now(); if (now - last < 80) return; last = now; a2.replaceChildren(md(t)); speed.textContent = tps.toFixed(1) + " tokens/s"; };
+      const out = images.length || engine !== "local"
+        ? await genRemote([sys, { role: "user", content }], 1600, onTok, "pro")
+        : await generate([sys, { role: "user", content }], 1600, onTok);
+      a2.replaceChildren(md(out || "(pas de réponse)"));
+    }
+    if (!signal.aborted && mode === "detail" && batches.length){
+      const a3 = el("div", "msg a", "Points clés et QCM…"); thread.append(a3);
+      const out = await genRemote([sys, { role: "user", content: `Voici le cours « ${cpdf.name} » (niveau : ${niv}).\n\n${all.slice(0, 14000)}\n\n---\n\nDonne : ## Les points clés à retenir (10 maximum), puis ## 5 QCM d'auto-évaluation sur ce cours, avec la correction expliquée à la fin.` }], 1600,
+        (t, tps) => { const now = performance.now(); if (now - last < 80) return; last = now; a3.replaceChildren(md(t)); speed.textContent = tps.toFixed(1) + " tokens/s"; }, "pro");
+      a3.replaceChildren(md(out || "(pas de réponse)"));
+    }
+  }catch(err){ failed = true; if (err?.name !== "AbortError") thread.append(el("div", "banner err", "Erreur : " + err.message)); }
+  finally{
+    s.history = [user(`Voici mon cours « ${cpdf.name} » (extrait) :\n\n${all.slice(0, 9000)}`), asst("J'ai expliqué ce cours en détail. Pose-moi tes questions dessus.")];
+    busy = false; stop.hidden = true; refreshButtons();
+  }
 });
 
 // ================= Divers =================
