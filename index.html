@@ -466,7 +466,7 @@ Règles :
 - Tiens compte de toute la conversation : une question de suivi (« et le traitement ? », « pourquoi ? », « et chez l'enfant ? ») porte sur le sujet dont on parlait juste avant.
 - Adapte ton niveau : précis et technique pour un étudiant ou un soignant, simple et clair (sans jargon) pour le grand public.
 - Si la personne parle de ses propres symptômes ou de ceux d'un proche : donne des informations générales, signale clairement les signes d'alarme, et conseille de consulter un médecin (ou d'appeler le SAMU en cas d'urgence : 141 au Maroc, 15 en France). Ne pose pas de diagnostic définitif et ne prescris pas de traitement à la place d'un médecin.`;
-const sys = { role: "system", content: SYSTEM };
+const sys = { role: "system", content: SYSTEM + `\nNous sommes le ${new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}. Tes connaissances s'arrêtent à une certaine date et tu n'as pas accès à Internet : pour l'actualité récente (prix Nobel, élections, nouvelles recommandations), donne ce que tu sais en précisant clairement l'année de ton information et qu'elle peut être dépassée. Réponds aussi aux questions générales, même si elles ne sont pas médicales.` };
 const user = (t) => ({ role: "user", content: t });
 const asst = (t) => ({ role: "assistant", content: t });
 const REVIEW = "Relis ta réponse comme un professeur de médecine exigeant. Vérifie : les erreurs (diagnostic, physiopathologie, examens, doses, contre-indications), les oublis importants (diagnostics différentiels graves à ne pas manquer, signes de gravité, urgences thérapeutiques, examens indispensables) et la cohérence avec toutes les données du cas (âge, terrain, constantes, examens). Réécris ensuite la réponse complète, corrigée et améliorée, avec exactement la même structure de titres. Ne mentionne pas cette relecture.";
@@ -877,12 +877,13 @@ $("chat-form").addEventListener("submit", async ev => {
   let full = q, hits = [];
   if ($("short-chat").checked) full += SHORT;
   if ($("lib-chat").checked && LIB.ready()){
-    hits = await LIB.search(q, 4);
-    if (hits.length) full = "Extraits de livres (utilise-les seulement s'ils répondent vraiment à la question ; sinon ignore-les complètement et réponds normalement avec tes connaissances, sans dire que la réponse n'est pas dans les extraits) :\n\n" + hits.map(h => `[${h.short}, p. ${h.page}]\n${h.text.slice(0, 800)}`).join("\n\n") + "\n\n---\n\nQuestion : " + full;
+    const qw = (q.toLowerCase().match(/[\p{L}]{5,}/gu) || []);
+    hits = (await LIB.search(q, 4)).filter(h => qw.filter(w => h.text.toLowerCase().includes(w)).length >= Math.min(2, qw.length));
   }
   let last = 0;
   try{
-    const text = await generate([sys, ...chat.history.slice(-12), user(full)], $("short-chat").checked ? 350 : 900, (t, tps) => {
+    const sysc = hits.length ? { role: "system", content: sys.content + "\n\nContexte facultatif : extraits de la bibliothèque de l'utilisateur. Utilise-les seulement s'ils aident à répondre. Ne les mentionne jamais (ne dis pas « d'après les extraits » ni « ce n'est pas dans les livres ») : réponds toujours normalement avec tes connaissances.\n\n" + hits.map(h => `[${h.short}, p. ${h.page}]\n${h.text.slice(0, 800)}`).join("\n\n") } : sys;
+    const text = await generate([sysc, ...chat.history.slice(-12), user(full)], $("short-chat").checked ? 350 : 900, (t, tps) => {
       const now = performance.now(); if (now - last < 80) return; last = now;
       a.replaceChildren(md(t)); $("chat-speed").textContent = tps.toFixed(1) + " tokens/s";
     });
