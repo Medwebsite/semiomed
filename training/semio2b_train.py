@@ -70,7 +70,7 @@ try:
             rows.append(conv(qcm_prompt(r["question"], opts, multi=len(good) > 1), qcm_answer(good, opts)))
 except Exception as e:
     print("FrenchMedMCQA ignoré :", e)
-# Données Hakim-Decider (Jip7e/hakim-decider-data, CC BY-NC 4.0) : Darija, FMPC/EDN, anglais
+# Données complémentaires (CC BY-NC 4.0) : darija, FMPC/EDN, anglais
 HK_EVAL = {"fr_fmpc_gold": [], "darija_hakim_triage": []}
 try:
     p = hf_hub_download("Jip7e/hakim-decider-data", "train_35k_curated.jsonl", repo_type="dataset")
@@ -83,14 +83,14 @@ try:
         opts = {"ABCDE"[i]: str(o).strip() for i, o in enumerate(opts_l)}
         rows.append(conv(qcm_prompt(r["question"], opts, (r.get("state") or "").strip() or None), qcm_answer(["ABCDE"[ai]], opts)))
         n_hk += 1
-    print("Hakim : exemples ajoutés", n_hk)
+    print("Données complémentaires : exemples ajoutés", n_hk)
     p = hf_hub_download("Jip7e/hakim-decider-data", "eval_benchmarks.jsonl", repo_type="dataset")
     for r in read_json_any(p):
         if r.get("suite") in HK_EVAL and r.get("qtype") == "choice" and 2 <= len(r.get("options") or []) <= 5:
             opts = {"ABCDE"[i]: str(o).strip() for i, o in enumerate(r["options"])}
             HK_EVAL[r["suite"]].append((qcm_prompt(r["question"], opts, (r.get("state") or "").strip() or None), ["ABCDE"[r["answer_idx"]]]))
 except Exception as e:
-    print("Hakim ignoré :", e)
+    print("Données complémentaires ignorées :", e)
 for q, a in [("Qui es-tu ?", f"Je suis Sémio, un assistant médical créé par {AUTEUR} pour aider les étudiants en médecine."),
              ("Qui t'a créé ?", f"J'ai été créé par {AUTEUR}. Je m'appelle Sémio.")]:
     for _ in range(4):
