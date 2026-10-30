@@ -1,6 +1,7 @@
 # Sémio-2c : LoRA sur Mistral-7B-Instruct-v0.2 (compatible Cloudflare Workers AI), données libres uniquement.
 # Étape 1 : traduction en darija de QCM libres (MediQAl, FrenchMedMCQA) par Gemma 4 E4B.
-# Étape 2 : entraînement sur MediQAl + FrenchMedMCQA + MedMCQA + QCM traduits en darija.
+# Étape 2 : explications « pas à pas » écrites par Gemma 4 E4B, gardées seulement si elles trouvent la bonne réponse.
+# Étape 3 : entraînement sur MediQAl + FrenchMedMCQA + MedMCQA + QCM darija + explications.
 import json, gzip, random, re, os, time, gc, inspect, warnings
 warnings.filterwarnings("ignore")
 os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
@@ -11,7 +12,9 @@ AUTEUR = "YM"
 HF_REPO = "Medwebsite/semio-2c-mistral7b-lora"
 MAX_STEPS = int(os.environ.get("SEMIO_STEPS", "1800"))
 N_DARIJA = int(os.environ.get("SEMIO_DARIJA", "4000"))
-TRAD_MINUTES = float(os.environ.get("SEMIO_TRAD_MIN", "110"))
+TRAD_MINUTES = float(os.environ.get("SEMIO_TRAD_MIN", "80"))
+EXPL_MINUTES = float(os.environ.get("SEMIO_EXPL_MIN", "70"))
+N_EXPL = int(os.environ.get("SEMIO_EXPL", "3000"))
 N_EVAL = 100
 WORK = "/kaggle/working"
 random.seed(3407)
@@ -106,6 +109,7 @@ except Exception as e:
 
 # ---------- Étape 1 : traduction en darija ----------
 darija_rows = []
+EXPL = {}
 src = [it for it in items if not it[2] and len(it[1]) >= 3 and len(it[0]) < 600]
 random.shuffle(src)
 src = src[:N_DARIJA]
@@ -164,12 +168,49 @@ try:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     if darija_rows:
         print("Exemple darija :", json.dumps(darija_rows[0], ensure_ascii=False)[:400], flush=True)
+    # ----- Explications vérifiées (distillation) -----
+    cand = [i for i, it in enumerate(items) if len(it[3]) == 1 and not it[2] and len(it[0]) < 500 and len(it[1]) >= 3]
+    random.shuffle(cand); cand = cand[:N_EXPL]
+    t1 = time.time(); n_try = 0
+    for b0 in range(0, len(cand), BS):
+        if (time.time() - t1) / 60 > EXPL_MINUTES:
+            print("Temps des explications écoulé, on s'arrête à", b0, flush=True)
+            break
+        idxs = cand[b0:b0 + BS]; prompts = []
+        for ix in idxs:
+            q, opts, _c, _g, _m = items[ix]
+            body = f"Question : {q}\n" + "\n".join(f"{k}. {v}" for k, v in opts.items())
+            msg = ("Résous ce QCM de médecine. Une seule réponse est juste. Raisonne en français en 3 à 6 lignes : "
+                   "rappelle la notion clé et élimine les mauvaises propositions une par une. "
+                   "Termine par une dernière ligne exactement sous la forme « RÉPONSE : X ».\n\n" + body)
+            try:
+                prompts.append(gproc.apply_chat_template([{"role": "user", "content": [{"type": "text", "text": msg}]}], tokenize=False, add_generation_prompt=True, enable_thinking=False))
+            except TypeError:
+                prompts.append(gproc.apply_chat_template([{"role": "user", "content": [{"type": "text", "text": msg}]}], tokenize=False, add_generation_prompt=True))
+        enc = gtok(prompts, return_tensors="pt", padding=True, add_special_tokens=False).to("cuda")
+        with torch.no_grad():
+            out = gmodel.generate(**enc, max_new_tokens=350, do_sample=False)
+        for j, ix in enumerate(idxs):
+            n_try += 1
+            txt = gtok.decode(out[j, enc["input_ids"].shape[1]:], skip_special_tokens=True).strip()
+            m = re.findall(r"R[ÉE]PONSE\s*:\s*\**\s*([A-E])\b", txt.upper())
+            if m and m[-1] == items[ix][3][0]:
+                expl = re.split(r"\n?\s*\**\s*R[ÉE]PONSE\s*:", txt, flags=re.I)[0].strip()
+                if 40 < len(expl) < 1500:
+                    EXPL[ix] = expl
+        if b0 % (BS * 10) == 0:
+            print(f"Explications : {n_try}/{len(cand)} · gardées {len(EXPL)} · {(time.time() - t1) / 60:.0f} min", flush=True)
+    with open(f"{WORK}/explications.jsonl", "w", encoding="utf-8") as f:
+        for ix, e in EXPL.items():
+            f.write(json.dumps({"question": items[ix][0], "options": items[ix][1], "good": items[ix][3], "explication": e}, ensure_ascii=False) + "\n")
+    if EXPL:
+        k0 = next(iter(EXPL)); print("Exemple d'explication :", EXPL[k0][:400], flush=True)
     del gmodel, gproc, gtok
 except Exception as e:
     import traceback; traceback.print_exc()
     print("Traduction darija ignorée :", e, flush=True)
 gc.collect(); torch.cuda.empty_cache()
-print("QCM darija traduits :", len(darija_rows), flush=True)
+print("QCM darija traduits :", len(darija_rows), "| explications gardées :", len(EXPL), flush=True)
 
 # ---------- Étape 2 : entraînement de Mistral ----------
 from unsloth import FastLanguageModel
@@ -180,7 +221,12 @@ from trl import SFTTrainer, SFTConfig
 model, tokenizer = FastLanguageModel.from_pretrained(
     model_name="unsloth/mistral-7b-instruct-v0.2-bnb-4bit", max_seq_length=1024, load_in_4bit=True)
 
-rows = [conv(qcm_prompt(q, o, c, m), qcm_answer(g, o)) for (q, o, c, g, m) in items]
+rows = []
+for ix, (q, o, c, g, m) in enumerate(items):
+    a = qcm_answer(g, o)
+    if ix in EXPL:
+        a += "\n\nPourquoi :\n" + EXPL[ix]
+    rows.append(conv(qcm_prompt(q, o, c, m), a))
 rows += en_rows
 for r in darija_rows:
     for _ in range(2):  # le darija est rare : on le montre deux fois
@@ -249,7 +295,7 @@ open(os.path.join(out_dir, "README.md"), "w").write(
     "---\nlicense: apache-2.0\nbase_model: mistralai/Mistral-7B-Instruct-v0.2\nlanguage: [fr, ar, en]\ntags: [medical, lora]\n---\n"
     f"# Sémio-2c (LoRA)\n\nAdaptateur médical créé par {AUTEUR} pour Sémio.\n\n"
     "Données d'entraînement : MediQAl (CC BY 4.0), FrenchMedMCQA (Apache 2.0), MedMCQA (Apache 2.0), "
-    "et des QCM de MediQAl/FrenchMedMCQA traduits en darija par Gemma 4.\n"
+    "des QCM de MediQAl/FrenchMedMCQA traduits en darija par Gemma 4, et des explications écrites par Gemma 4 (gardées seulement si elles trouvent la bonne réponse).\n"
     "Gemma is provided under and subject to the Gemma Terms of Use found at ai.google.dev/gemma/terms.\n\n"
     f"Scores sur {N_EVAL} QCM jamais vus par jeu : avant {avant}, après {apres}.\n"
     "Outil pédagogique : ne remplace pas un avis médical.\n")
