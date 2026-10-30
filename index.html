@@ -1026,6 +1026,7 @@ $("f-exam").addEventListener("submit", ev => {
       status.textContent = "Mesure du tracé ECG (étape 1/2)…";
       facts = await quickAsk([{ type: "text", text: ECG_MEASURE }, ...imgParts], 700);
     }
+    if (type === "ECG") note = (note ? note + " " : "") + "Attention : la lecture d'ECG par Sémio est expérimentale. Dans nos tests, elle reconnaît bien un ECG normal ou un infarctus, mais elle rate souvent les blocs de branche, le WPW, la péricardite, l'hypertrophie ventriculaire et les bradycardies. Fais toujours relire l'ECG par un médecin.";
     return { content: [{ type: "text", text: examPrompt(type, patient, ctx, q, facts) }, ...imgParts], note };
   }, imgs);
 });
