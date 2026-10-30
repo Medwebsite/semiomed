@@ -889,7 +889,7 @@ $("chat-form").addEventListener("submit", async ev => {
   }
   let last = 0;
   try{
-    const webNote = web.length ? "\n\nRésultats d'une recherche sur Wikipédia faite aujourd'hui. Pour les faits récents, appuie-toi d'abord sur eux et réponds directement (ne dis pas « d'après les informations fournies »). S'ils ne contiennent pas la réponse, dis-le en une phrase et donne ce que tu sais en précisant l'année de ton information. Réponds dans la langue de la personne.\n\n" + web.map(w => `[${w.title}]\n${w.text}`).join("\n\n") : "";
+    const webNote = web.length ? "\n\nRésultats d'une recherche sur Wikipédia faite aujourd'hui (" + new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) + "). Ils sont plus récents que tes connaissances et ils sont exacts : ne dis jamais qu'un événement passé n'a pas encore eu lieu ou que personne ne le connaît. Pour les faits récents, appuie-toi d'abord sur eux et réponds directement (ne dis pas « d'après les informations fournies »). S'ils ne contiennent pas la réponse, dis-le en une phrase et donne ce que tu sais en précisant l'année de ton information. Réponds dans la langue de la personne.\n\n" + web.map(w => `[${w.title}]\n${w.text}`).join("\n\n") : "";
     const libNote = hits.length ? "\n\nContexte facultatif : extraits de la bibliothèque de l'utilisateur. Utilise-les seulement s'ils aident à répondre. Ne les mentionne jamais (ne dis pas « d'après les extraits » ni « ce n'est pas dans les livres ») : réponds toujours normalement avec tes connaissances.\n\n" + hits.map(h => `[${h.short}, p. ${h.page}]\n${h.text.slice(0, 800)}`).join("\n\n") : "";
     const sysc = (webNote || libNote) ? { role: "system", content: sys.content + webNote + libNote } : sys;
     const text = await generate([sysc, ...chat.history.slice(-12), user(full)], $("short-chat").checked ? 350 : 900, (t, tps) => {
@@ -922,10 +922,27 @@ async function webSearch(q, hist){
     try{
       const e = await (await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&prop=extracts|info&inprop=url&exchars=2000&explaintext=1&titles=${encodeURIComponent(t)}&format=json&origin=*`)).json();
       const p = Object.values(e.query?.pages || {})[0];
-      return p?.extract ? { title: p.title, url: p.fullurl, text: p.extract.slice(0, 2000) } : null;
+      if (!p?.extract) return null;
+      let text = p.extract;
+      if (text.length < 1200 || t.includes(String(year))){
+        try{
+          const w = await (await fetch(`https://${lang}.wikipedia.org/w/api.php?action=parse&page=${encodeURIComponent(p.title)}&prop=wikitext&format=json&origin=*`)).json();
+          const wt = wikiText(w.parse?.wikitext?.["*"] || "");
+          if (wt.length > text.length) text = wt;
+        }catch{}
+      }
+      return { title: p.title, url: p.fullurl, text: text.slice(0, 3000) };
     }catch{ return null; }
   }));
   return pages.filter(Boolean);
+}
+function wikiText(s){
+  s = s.replace(/<ref[^>]*\/>/g, "").replace(/<ref[\s\S]*?<\/ref>/g, "").replace(/<!--[\s\S]*?-->/g, "");
+  for (let i = 0; i < 5; i++) s = s.replace(/\{\{[^{}]*\}\}/g, "");
+  s = s.replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, "$1").replace(/\[https?:\S+ ([^\]]*)\]/g, "$1");
+  s = s.replace(/'{2,}/g, "").replace(/^\{\|.*$/gm, "").replace(/^\|\}.*$/gm, "").replace(/^\|-.*$/gm, "\n");
+  s = s.replace(/(rowspan|colspan|class|style|scope|align)="[^"]*"\s*\|?/g, "").replace(/^[!|]\s*/gm, "| ");
+  return s.replace(/\n{3,}/g, "\n\n").trim();
 }
 
 // ================= Examens (imagerie, ECG, biologie) =================
