@@ -148,7 +148,7 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
     <div class="brand">
       <span class="label">L'IA médicale pour tous</span>
       <h1><svg width="34" height="22" viewBox="0 0 34 22" aria-hidden="true"><path d="M1 12h8l3-8 4 16 3-12 2 4h12" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="gold">Sémio</span><span class="by">par YM</span></h1>
-      <p>Cas cliniques, cours, mécanismes, recherche, discussion libre et bibliothèque. Sémio-Pro et Sémio-2 répondent en quelques secondes ; Sémio-1 peut aussi tourner hors ligne sur ton ordinateur.</p>
+      <p>Cas cliniques, cours, mécanismes, recherche, discussion libre et bibliothèque. Sémio-Pro et Sémio-2b répondent en quelques secondes ; Sémio-1 peut aussi tourner hors ligne sur ton ordinateur.</p>
     </div>
     <p class="disclaimer">Outil d'information et d'apprentissage. Peut se tromper : vérifie toujours auprès d'un professionnel de santé. Ne remplace pas une consultation ; en cas d'urgence, appelle le SAMU (141 au Maroc, 15 en France).</p>
   </div>
@@ -548,7 +548,7 @@ const state = {};
 function emptyState(key){
   const out = document.querySelector(`[data-out="${key}"]`); out.replaceChildren();
   const head = el("div", "out-head"); head.append(el("span", "label", "Réponse"), el("span", "speed")); out.append(head);
-  const e = el("div", "empty"); e.append(document.createTextNode("Charge Sémio-1 (en haut), remplis le formulaire puis lance. Tu obtiendras :"));
+  const e = el("div", "empty"); e.append(document.createTextNode("Remplis le formulaire puis lance. Tu obtiendras :"));
   const ul = el("ul"); MODULES[key].empty.forEach(t => ul.append(el("li", null, t))); e.append(ul); out.append(e);
   state[key] = { history: [], out };
 }
