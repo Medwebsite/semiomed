@@ -912,6 +912,7 @@ async function webSearch(q, hist){
   const kwTxt = await genRemote([{ role: "user", content: `Conversation :\n${ctxt}\nNouvelle question : ${q}\n\nNous sommes en ${year}. Écris deux requêtes de recherche Wikipédia pour trouver la réponse (3 à 6 mots-clés précis, avec l'année si c'est utile) : ligne 1 en anglais, ligne 2 en français. Réponds uniquement par ces deux lignes.` }], 40, () => {}, "pro", 0);
   const lines = (kwTxt || q).split("\n").map(l => l.replace(/^\s*(\d[\.\)]|ligne\s*\d\s*:|-)\s*/i, "").replace(/["«»*]/g, " ").trim()).filter(Boolean);
   const plan = [["en", lines[0] || q, 4], ["fr", lines[1] || q, 2]];
+  if (!/20\d\d/.test(plan[0][1])) plan.unshift(["en", year + " " + plan[0][1], 3]);
   const titles = [];
   for (const [lang, kw, n] of plan){
     try{
@@ -919,6 +920,7 @@ async function webSearch(q, hist){
       (s.query?.search || []).forEach(x => titles.push([lang, x.title]));
     }catch{}
   }
+  for (let i = titles.length - 1; i >= 0; i--) if (titles.findIndex(t => t[0] === titles[i][0] && t[1] === titles[i][1]) < i) titles.splice(i, 1);
   titles.sort((x, y) => (y[1].includes(String(year)) ? 1 : 0) - (x[1].includes(String(year)) ? 1 : 0));
   const pages = await Promise.all(titles.slice(0, 5).map(async ([lang, t]) => {
     try{
