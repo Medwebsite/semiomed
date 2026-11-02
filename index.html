@@ -121,6 +121,11 @@ footer{margin:28px 0 40px;font-size:13px;color:var(--muted);max-width:85ch}
 .hits .snip{font-size:14px;color:var(--ink)}
 .srcs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 dialog.viewer{border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);padding:0;width:min(900px,96vw);max-height:92vh}
+.acctbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+.acctbar .note,.acct .note{font-size:13px;color:var(--muted)}
+.vbody.acct,.vbody.hist{text-align:left;padding:16px;display:flex;flex-direction:column;gap:12px}
+.vbody.acct .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.vbody.acct input{background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit}
 dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
 .vhead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .vbody{overflow:auto;max-height:calc(92vh - 60px);padding:10px;text-align:center}
@@ -169,6 +174,8 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
     </select>
     <button class="btn btn-ghost" id="loadBtn" hidden>Charger Sémio-1 hors ligne</button>
   </section>
+
+  <div class="acctbar"><span class="note" id="acct-note"></span><span class="actions"><button class="btn btn-ghost btn-sm" id="hist-btn" type="button">Mon historique</button><button class="btn btn-primary btn-sm" id="acct-btn" type="button">Se connecter</button></span></div>
 
   <nav class="tabs" role="tablist">
     <button class="tab" role="tab" data-tab="chat" aria-selected="false">Discussion</button>
@@ -332,6 +339,25 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
       <ul class="hits" id="b-hits"><li class="empty">Les pages trouvées s'afficheront ici. Clique sur « Voir la page » pour ouvrir la planche.</li></ul>
     </div>
   </section>
+
+  <dialog class="viewer" id="acct-dlg">
+    <div class="vhead"><strong>Compte Sémio</strong><span class="actions"><button class="btn btn-ghost btn-sm" id="a-close" type="button">Fermer</button></span></div>
+    <div class="vbody acct">
+      <form id="a-in" autocomplete="on">
+        <p class="note">Gratuit. Ton compte sert à retrouver ton historique sur tous tes appareils.</p>
+        <div class="field"><label for="a-email">E-mail</label><input type="email" id="a-email" autocomplete="email" required></div>
+        <div class="field"><label for="a-pw">Mot de passe (6 caractères minimum)</label><input type="password" id="a-pw" autocomplete="current-password" required></div>
+        <div class="actions"><button class="btn btn-primary btn-sm" id="a-signin" type="submit">Se connecter</button><button class="btn btn-ghost btn-sm" id="a-signup" type="button">Créer un compte</button></div>
+        <p class="note">Ne mets jamais de nom ou d'information permettant de reconnaître un patient : l'historique est enregistré sur le serveur de Sémio.</p>
+      </form>
+      <div id="a-out" hidden><p>Connecté : <strong id="a-who"></strong></p><div class="actions"><button class="btn btn-ghost btn-sm" id="a-logout" type="button">Se déconnecter</button></div></div>
+      <p class="note" id="a-msg" aria-live="polite"></p>
+    </div>
+  </dialog>
+  <dialog class="viewer" id="hist-dlg">
+    <div class="vhead"><strong id="h-title">Mon historique</strong><span class="actions"><button class="btn btn-ghost btn-sm" id="h-close" type="button">Fermer</button></span></div>
+    <div class="vbody hist" id="h-body"></div>
+  </dialog>
 
   <dialog class="viewer" id="viewer">
     <div class="vhead"><strong id="v-title">Page</strong><span class="actions"><button class="btn btn-ghost btn-sm" id="v-prev" type="button">‹ Préc.</button><button class="btn btn-ghost btn-sm" id="v-next" type="button">Suiv. ›</button><button class="btn btn-primary btn-sm" id="v-close" type="button">Fermer</button></span></div>
@@ -623,6 +649,7 @@ async function ask(key, shown, prompt, maxTokens, followUp, query){
     }
     a.replaceChildren(md(final || "(pas de réponse)"));
     s.history.push(user(fullPrompt), asst(final));
+    if (final){ if (!followUp){ s.hid = null; s.hm = []; } s.hm = [...(s.hm || []), H("u", shown), H("a", final)]; HIST.save({ id: s.hid, kind: key, title: s.hm[0].t, msgs: s.hm }).then(id => { s.hid = id; }); }
   }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
   finally{ busy = false; s.composer.querySelector(".stop").hidden = true; refreshButtons(); }
 }
@@ -699,6 +726,7 @@ $("f-rech").addEventListener("submit", async ev => {
   try{
     const text = await generate([sys, user(prompt)], MODULES.rech.max, (t, tps) => { const now = performance.now(); if (now - last < 80) return; last = now; a.replaceChildren(md(t)); speed.textContent = tps.toFixed(1) + " tokens/s"; });
     a.replaceChildren(md(text)); s.history = [user(prompt), asst(text)];
+    if (text) HIST.save({ kind: "rech", title: q, msgs: [H("u", q), H("a", "**Articles trouvés**\n\n" + arts.map((x, i) => `${i+1}. ${x.title.replace(/<[^>]+>/g, "")} — ${x.pmid ? "https://pubmed.ncbi.nlm.nih.gov/" + x.pmid + "/" : "https://europepmc.org/article/" + x.source + "/" + x.id}`).join("\n") + "\n\n" + text)] });
   }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
   finally{ busy = false; s.composer.querySelector(".stop").hidden = true; refreshButtons(); }
 });
@@ -859,14 +887,150 @@ LIB.init().catch(err => LIB.status("Bibliothèque indisponible dans ce navigateu
 // ================= Discussion =================
 const chat = { history: (() => { try{ const h = JSON.parse(store.get("semio-chat") || "[]"); return Array.isArray(h) ? h : []; }catch{ return []; } })() };
 const saveChat = () => store.set("semio-chat", JSON.stringify(chat.history.slice(-24)));
-if (chat.history.length){
+chat.histId = store.get("semio-chat-id") || null;
+function drawChat(){
   const th0 = $("chat-thread"); th0.replaceChildren();
   chat.history.forEach(m => { if (m.role === "user") th0.append(el("div", "msg u", m.content)); else { const d = el("div", "msg a"); d.append(md(m.content)); th0.append(d); } });
 }
+if (chat.history.length) drawChat();
 document.querySelectorAll(".uselib").forEach(c => c.addEventListener("change", () => { c.dataset.touched = 1; }));
 $("chat-in").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); $("chat-form").requestSubmit(); } });
-$("chat-new").onclick = () => { chat.history = []; saveChat(); $("chat-thread").replaceChildren(el("div", "empty", "Nouvelle discussion. Pose ta question.")); };
+$("chat-new").onclick = () => { chat.history = []; chat.histId = null; store.set("semio-chat-id", ""); saveChat(); $("chat-thread").replaceChildren(el("div", "empty", "Nouvelle discussion. Pose ta question.")); };
 $("chat-stop").onclick = () => ctl?.abort();
+
+// ================= Compte et historique (Supabase) =================
+const SB_URL = "https://rqkcpstdsoneiyaxbkor.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxa2Nwc3Rkc29uZWl5YXhia29yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2NDI2OTAsImV4cCI6MjEwOTIxODY5MH0._HRge3jQiZhjJDofO5ryxO25CNEdj4eHTUi9948VmZI";
+const KINDS = { chat: "Discussion", cas: "Cas clinique", exam: "Examen", cours: "Cours", meca: "Mécanisme", rech: "Recherche" };
+const ACCT = (() => {
+  let s = null; try{ s = JSON.parse(store.get("semio-auth") || "null"); }catch{}
+  const call = async (path, body) => {
+    const r = await fetch(SB_URL + "/auth/v1/" + path, { method: "POST", headers: { apikey: SB_KEY, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.msg || j.error_description || j.message || "Erreur " + r.status);
+    return j;
+  };
+  const set = (j) => {
+    s = j?.access_token ? { at: j.access_token, rt: j.refresh_token, exp: Date.now() + ((j.expires_in || 3600) - 60) * 1000, email: j.user?.email || s?.email } : null;
+    store.set("semio-auth", JSON.stringify(s)); renderAcct();
+  };
+  return {
+    get email(){ return s?.email || null; },
+    async token(){
+      if (!s) return null;
+      if (Date.now() > s.exp){ try{ set(await call("token?grant_type=refresh_token", { refresh_token: s.rt })); }catch{ set(null); return null; } }
+      return s?.at || null;
+    },
+    async signIn(email, password){ set(await call("token?grant_type=password", { email, password })); await HIST.migrate(); },
+    async signUp(email, password){
+      const j = await call("signup", { email, password });
+      if (j.access_token){ set(j); await HIST.migrate(); return "ok"; }
+      return "confirm";
+    },
+    async signOut(){ const t = s?.at; set(null); if (t) fetch(SB_URL + "/auth/v1/logout", { method: "POST", headers: { apikey: SB_KEY, Authorization: "Bearer " + t } }).catch(() => {}); },
+  };
+})();
+const HIST = (() => {
+  const local = () => { try{ const a = JSON.parse(store.get("semio-hist") || "[]"); return Array.isArray(a) ? a : []; }catch{ return []; } };
+  const saveLocal = (a) => store.set("semio-hist", JSON.stringify(a.slice(0, 40)));
+  const rest = async (path, opt = {}) => {
+    const t = await ACCT.token(); if (!t) throw new Error("non connecté");
+    const r = await fetch(SB_URL + "/rest/v1/" + path, { ...opt, headers: { apikey: SB_KEY, Authorization: "Bearer " + t, "Content-Type": "application/json", Prefer: "return=minimal", ...(opt.headers || {}) } });
+    if (!r.ok) throw new Error("Historique : " + r.status);
+    return r.status === 204 || r.headers.get("content-length") === "0" ? null : r.json().catch(() => null);
+  };
+  const clip = (msgs) => msgs.slice(-30).map(m => ({ r: m.r, t: String(m.t || "").slice(0, 20000) }));
+  return {
+    async save(e){
+      const id = e.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+      const row = { id, kind: e.kind, title: String(e.title || "").slice(0, 120), msgs: clip(e.msgs), updated_at: new Date().toISOString() };
+      if (ACCT.email){
+        try{ await rest("history?on_conflict=id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify(row) }); return id; }catch{}
+      }
+      const a = local().filter(x => x.id !== id); a.unshift(row); saveLocal(a); return id;
+    },
+    async list(){
+      if (ACCT.email){ try{ return await rest("history?select=id,kind,title,updated_at&order=updated_at.desc&limit=100", { headers: { Prefer: "" } }) || []; }catch{} }
+      return local().map(({ msgs, ...x }) => x);
+    },
+    async get(id){
+      if (ACCT.email){ try{ const r = await rest("history?select=*&id=eq." + encodeURIComponent(id), { headers: { Prefer: "" } }); if (r?.[0]) return r[0]; }catch{} }
+      return local().find(x => x.id === id) || null;
+    },
+    async remove(id){
+      if (ACCT.email){ try{ await rest("history?id=eq." + encodeURIComponent(id), { method: "DELETE" }); }catch{} }
+      saveLocal(local().filter(x => x.id !== id));
+    },
+    async migrate(){
+      const a = local(); if (!a.length || !ACCT.email) return;
+      try{ await rest("history?on_conflict=id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify(a) }); saveLocal([]); }catch{}
+    },
+  };
+})();
+const H = (r, t) => ({ r, t });
+function renderAcct(){
+  const b = $("acct-btn"); if (!b) return;
+  b.textContent = ACCT.email ? "Mon compte" : "Se connecter";
+  $("acct-note").textContent = ACCT.email ? "Connecté : " + ACCT.email + ". Ton historique est sauvegardé dans ton compte." : "Sans compte, ton historique reste seulement sur cet appareil.";
+}
+$("acct-btn").onclick = () => {
+  const d = $("acct-dlg"); $("a-msg").textContent = "";
+  $("a-in").hidden = !!ACCT.email; $("a-out").hidden = !ACCT.email;
+  $("a-who").textContent = ACCT.email || ""; d.showModal();
+};
+$("a-close").onclick = () => $("acct-dlg").close();
+$("a-logout").onclick = async () => { await ACCT.signOut(); $("acct-dlg").close(); };
+async function acctDo(kind){
+  const email = $("a-email").value.trim(), pw = $("a-pw").value;
+  const msg = $("a-msg");
+  if (!email || pw.length < 6){ msg.textContent = "Entre ton e-mail et un mot de passe d'au moins 6 caractères."; return; }
+  msg.textContent = "Patiente…";
+  try{
+    if (kind === "in"){ await ACCT.signIn(email, pw); $("acct-dlg").close(); }
+    else { const r = await ACCT.signUp(email, pw); if (r === "ok") $("acct-dlg").close(); else msg.textContent = "Compte créé. Ouvre l'e-mail de confirmation reçu, puis reviens te connecter."; }
+    $("a-pw").value = "";
+  }catch(err){
+    const m = err.message || "";
+    msg.textContent = /Invalid login/i.test(m) ? "E-mail ou mot de passe incorrect." : /already registered/i.test(m) ? "Ce compte existe déjà : clique sur « Se connecter »." : /not confirmed/i.test(m) ? "Confirme d'abord ton e-mail (regarde aussi les spams)." : "Erreur : " + m;
+  }
+}
+$("a-signin").onclick = (e) => { e.preventDefault(); acctDo("in"); };
+$("a-signup").onclick = (e) => { e.preventDefault(); acctDo("up"); };
+$("hist-btn").onclick = () => { $("hist-dlg").showModal(); showHistList(); };
+$("h-close").onclick = () => $("hist-dlg").close();
+async function showHistList(){
+  const body = $("h-body"); body.replaceChildren(el("div", "empty", "Chargement…"));
+  $("h-title").textContent = "Mon historique";
+  const items = await HIST.list();
+  if (!items.length){ body.replaceChildren(el("div", "empty", "Rien pour l'instant. Tes discussions, cas, examens, cours et recherches apparaîtront ici.")); return; }
+  const ul = el("ul", "hits");
+  items.forEach(it => {
+    const li = el("li"); const top = el("div", "src", (KINDS[it.kind] || it.kind) + " · " + new Date(it.updated_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }));
+    const t = el("div", "snip", it.title || "(sans titre)");
+    const act = el("div", "actions");
+    const o = el("button", "btn btn-ghost btn-sm", "Ouvrir"); o.type = "button"; o.onclick = () => showHistItem(it.id);
+    const d = el("button", "btn btn-ghost btn-sm", "Supprimer"); d.type = "button"; d.onclick = async () => { await HIST.remove(it.id); li.remove(); };
+    act.append(o, d); li.append(top, t, act); ul.append(li);
+  });
+  body.replaceChildren(ul);
+}
+async function showHistItem(id){
+  const body = $("h-body"); body.replaceChildren(el("div", "empty", "Chargement…"));
+  const it = await HIST.get(id); if (!it){ body.replaceChildren(el("div", "empty", "Introuvable.")); return; }
+  $("h-title").textContent = (KINDS[it.kind] || it.kind) + " · " + (it.title || "");
+  const back = el("button", "btn btn-ghost btn-sm", "‹ Retour"); back.type = "button"; back.onclick = showHistList;
+  const bar = el("div", "actions"); bar.append(back);
+  if (it.kind === "chat"){
+    const go = el("button", "btn btn-primary btn-sm", "Reprendre cette discussion"); go.type = "button";
+    go.onclick = () => { chat.history = it.msgs.map(m => m.r === "u" ? user(m.t) : asst(m.t)); chat.histId = it.id; saveChat(); drawChat(); $("hist-dlg").close(); document.querySelector('.tab[data-tab="chat"]')?.click(); };
+    bar.append(go);
+  }
+  const th = el("div", "thread");
+  it.msgs.forEach(m => { if (m.r === "u") th.append(el("div", "msg u", m.t)); else { const d = el("div", "msg a"); d.append(md(m.t)); th.append(d); } });
+  body.replaceChildren(bar, th);
+}
+renderAcct();
+
 $("chat-form").addEventListener("submit", async ev => {
   ev.preventDefault();
   const q = $("chat-in").value.trim(); if (!q) return;
@@ -900,7 +1064,7 @@ $("chat-form").addEventListener("submit", async ev => {
     }, web.length ? "pro" : undefined);
     a.replaceChildren(md(text || "(pas de réponse)"));
     if (web.length){ const box = el("div", "srcs"); box.append(el("span", "label", "Sources web :")); web.forEach(w => { const l = el("a", "chip", w.title); l.href = w.url; l.target = "_blank"; l.rel = "noopener"; box.append(l); }); a.append(box); }
-    if (text) { chat.history.push(user(q), asst(text)); saveChat(); }
+    if (text) { chat.history.push(user(q), asst(text)); saveChat(); HIST.save({ id: chat.histId, kind: "chat", title: chat.history.find(m => m.role === "user")?.content, msgs: chat.history.map(m => H(m.role === "user" ? "u" : "a", m.content)) }).then(id => { chat.histId = id; store.set("semio-chat-id", id); }); }
   }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
   finally{ busy = false; $("chat-stop").hidden = true; refreshButtons(); }
 });
@@ -1036,7 +1200,7 @@ async function runExam(shown, content, imgs){
       a.replaceChildren(md(t)); $("x-speed").textContent = tps.toFixed(1) + " tokens/s";
     }, "pro");
     a.replaceChildren(md(text || "(pas de réponse)"));
-    if (text){ exam.history.push(userMsg, asst(text)); $("x-follow").hidden = false; }
+    if (text){ if (!exam.history.length){ exam.hid = null; exam.hm = []; } exam.history.push(userMsg, asst(text)); $("x-follow").hidden = false; exam.hm = [...(exam.hm || []), H("u", shown), H("a", text)]; HIST.save({ id: exam.hid, kind: "exam", title: exam.hm[0].t, msgs: exam.hm }).then(id => { exam.hid = id; }); }
   }catch(err){ a.replaceChildren(err?.name === "AbortError" ? el("div", "empty", "Arrêté.") : el("div", "banner err", "Erreur : " + err.message)); }
   finally{ busy = false; $("x-run").disabled = false; $("x-stop").hidden = true; refreshButtons(); }
 }
