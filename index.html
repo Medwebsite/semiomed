@@ -916,6 +916,13 @@ const ACCT = (() => {
   };
   return {
     get email(){ return s?.email || null; },
+    fromHash(){
+      const p = new URLSearchParams(location.hash.slice(1)); const at = p.get("access_token");
+      if (!at) return false;
+      let email = null; try{ email = JSON.parse(atob(at.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).email; }catch{}
+      set({ access_token: at, refresh_token: p.get("refresh_token"), expires_in: +p.get("expires_in") || 3600, user: { email } });
+      history.replaceState(null, "", location.pathname + location.search); return true;
+    },
     async token(){
       if (!s) return null;
       if (Date.now() > s.exp){ try{ set(await call("token?grant_type=refresh_token", { refresh_token: s.rt })); }catch{ set(null); return null; } }
@@ -1030,6 +1037,7 @@ async function showHistItem(id){
   body.replaceChildren(bar, th);
 }
 renderAcct();
+if (ACCT.fromHash()) HIST.migrate().then(() => { $("acct-note").textContent = "E-mail confirmé : tu es connecté (" + ACCT.email + ")."; });
 
 $("chat-form").addEventListener("submit", async ev => {
   ev.preventDefault();
