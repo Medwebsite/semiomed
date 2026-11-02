@@ -125,6 +125,10 @@ dialog.viewer{border:1px solid var(--line);border-radius:12px;background:var(--p
 .acctbar .note,.acct .note{font-size:13px;color:var(--muted)}
 .vbody.acct,.vbody.hist{text-align:left;padding:16px;display:flex;flex-direction:column;gap:12px}
 .vbody.acct .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.atabs{display:flex;gap:6px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.atab{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer}
+.atab[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.row2{display:flex;gap:10px;flex-wrap:wrap}.row2 .field{flex:1 1 160px}
 .vbody.acct input{background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit}
 dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
 .vhead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -343,11 +347,21 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
   <dialog class="viewer" id="acct-dlg">
     <div class="vhead"><strong>Compte Sémio</strong><span class="actions"><button class="btn btn-ghost btn-sm" id="a-close" type="button">Fermer</button></span></div>
     <div class="vbody acct">
+      <div class="atabs" id="a-tabs"><button type="button" class="atab" data-m="in" aria-pressed="true">Se connecter</button><button type="button" class="atab" data-m="up" aria-pressed="false">Créer un compte</button></div>
       <form id="a-in" autocomplete="on">
-        <p class="note">Gratuit. Ton compte sert à retrouver ton historique sur tous tes appareils.</p>
         <div class="field"><label for="a-email">E-mail</label><input type="email" id="a-email" autocomplete="email" required></div>
-        <div class="field"><label for="a-pw">Mot de passe (6 caractères minimum)</label><input type="password" id="a-pw" autocomplete="current-password" required></div>
-        <div class="actions"><button class="btn btn-primary btn-sm" id="a-signin" type="submit">Se connecter</button><button class="btn btn-ghost btn-sm" id="a-signup" type="button">Créer un compte</button></div>
+        <div class="field"><label for="a-pw">Mot de passe</label><input type="password" id="a-pw" autocomplete="current-password" required></div>
+        <div class="actions"><button class="btn btn-primary btn-sm" id="a-signin" type="submit">Se connecter</button></div>
+        <p class="note">Pas encore de compte ? Clique sur « Créer un compte » en haut.</p>
+      </form>
+      <form id="a-up" autocomplete="on" hidden>
+        <p class="note">Gratuit. Ton compte sert à retrouver ton historique sur tous tes appareils.</p>
+        <div class="row2"><div class="field"><label for="u-first">Prénom</label><input type="text" id="u-first" autocomplete="given-name" required></div>
+        <div class="field"><label for="u-last">Nom</label><input type="text" id="u-last" autocomplete="family-name" required></div></div>
+        <div class="field"><label for="u-email">E-mail</label><input type="email" id="u-email" autocomplete="email" required></div>
+        <div class="field"><label for="u-pw">Mot de passe (6 caractères minimum)</label><input type="password" id="u-pw" autocomplete="new-password" required></div>
+        <div class="field"><label for="u-pw2">Confirme le mot de passe</label><input type="password" id="u-pw2" autocomplete="new-password" required></div>
+        <div class="actions"><button class="btn btn-primary btn-sm" id="a-signup" type="submit">Créer mon compte</button></div>
         <p class="note">Ne mets jamais de nom ou d'information permettant de reconnaître un patient : l'historique est enregistré sur le serveur de Sémio.</p>
       </form>
       <div id="a-out" hidden><p>Connecté : <strong id="a-who"></strong></p><div class="actions"><button class="btn btn-ghost btn-sm" id="a-logout" type="button">Se déconnecter</button></div></div>
@@ -911,16 +925,18 @@ const ACCT = (() => {
     return j;
   };
   const set = (j) => {
-    s = j?.access_token ? { at: j.access_token, rt: j.refresh_token, exp: Date.now() + ((j.expires_in || 3600) - 60) * 1000, email: j.user?.email || s?.email } : null;
+    s = j?.access_token ? { at: j.access_token, rt: j.refresh_token, exp: Date.now() + ((j.expires_in || 3600) - 60) * 1000, email: j.user?.email || s?.email, name: j.user?.user_metadata?.first_name || s?.name || "" } : null;
     store.set("semio-auth", JSON.stringify(s)); renderAcct();
   };
   return {
     get email(){ return s?.email || null; },
+    get name(){ return s?.name || ""; },
     fromHash(){
       const p = new URLSearchParams(location.hash.slice(1)); const at = p.get("access_token");
       if (!at) return false;
       let email = null; try{ email = JSON.parse(atob(at.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).email; }catch{}
-      set({ access_token: at, refresh_token: p.get("refresh_token"), expires_in: +p.get("expires_in") || 3600, user: { email } });
+      let first = ""; try{ first = JSON.parse(atob(at.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).user_metadata?.first_name || ""; }catch{}
+      set({ access_token: at, refresh_token: p.get("refresh_token"), expires_in: +p.get("expires_in") || 3600, user: { email, user_metadata: { first_name: first } } });
       history.replaceState(null, "", location.pathname + location.search); return true;
     },
     async token(){
@@ -929,8 +945,8 @@ const ACCT = (() => {
       return s?.at || null;
     },
     async signIn(email, password){ set(await call("token?grant_type=password", { email, password })); await HIST.migrate(); },
-    async signUp(email, password){
-      const j = await call("signup", { email, password });
+    async signUp(email, password, first_name, last_name){
+      const j = await call("signup?redirect_to=" + encodeURIComponent(location.origin + location.pathname), { email, password, data: { first_name, last_name } });
       if (j.access_token){ set(j); await HIST.migrate(); return "ok"; }
       return "confirm";
     },
@@ -977,32 +993,44 @@ const HIST = (() => {
 const H = (r, t) => ({ r, t });
 function renderAcct(){
   const b = $("acct-btn"); if (!b) return;
-  b.textContent = ACCT.email ? "Mon compte" : "Se connecter";
-  $("acct-note").textContent = ACCT.email ? "Connecté : " + ACCT.email + ". Ton historique est sauvegardé dans ton compte." : "Sans compte, ton historique reste seulement sur cet appareil.";
+  b.textContent = ACCT.email ? (ACCT.name || "Mon compte") : "Se connecter / S'inscrire";
+  $("acct-note").textContent = ACCT.email ? (ACCT.name ? "Bonjour " + ACCT.name + " ! " : "Connecté. ") + "Ton historique est sauvegardé dans ton compte." : "Sans compte, ton historique reste seulement sur cet appareil.";
 }
 $("acct-btn").onclick = () => {
   const d = $("acct-dlg"); $("a-msg").textContent = "";
-  $("a-in").hidden = !!ACCT.email; $("a-out").hidden = !ACCT.email;
-  $("a-who").textContent = ACCT.email || ""; d.showModal();
+  $("a-tabs").hidden = !!ACCT.email; acctMode(ACCT.email ? "out" : "in");
+  $("a-who").textContent = (ACCT.name ? ACCT.name + " · " : "") + (ACCT.email || ""); d.showModal();
 };
 $("a-close").onclick = () => $("acct-dlg").close();
 $("a-logout").onclick = async () => { await ACCT.signOut(); $("acct-dlg").close(); };
-async function acctDo(kind){
-  const email = $("a-email").value.trim(), pw = $("a-pw").value;
-  const msg = $("a-msg");
-  if (!email || pw.length < 6){ msg.textContent = "Entre ton e-mail et un mot de passe d'au moins 6 caractères."; return; }
-  msg.textContent = "Patiente…";
-  try{
-    if (kind === "in"){ await ACCT.signIn(email, pw); $("acct-dlg").close(); }
-    else { const r = await ACCT.signUp(email, pw); if (r === "ok") $("acct-dlg").close(); else msg.textContent = "Compte créé. Ouvre l'e-mail de confirmation reçu, puis reviens te connecter."; }
-    $("a-pw").value = "";
-  }catch(err){
-    const m = err.message || "";
-    msg.textContent = /Invalid login/i.test(m) ? "E-mail ou mot de passe incorrect." : /already registered/i.test(m) ? "Ce compte existe déjà : clique sur « Se connecter »." : /not confirmed/i.test(m) ? "Confirme d'abord ton e-mail (regarde aussi les spams)." : "Erreur : " + m;
-  }
+function acctMode(m){
+  $("a-in").hidden = m !== "in"; $("a-up").hidden = m !== "up"; $("a-out").hidden = m !== "out"; $("a-msg").textContent = "";
+  document.querySelectorAll(".atab").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === m ? "true" : "false"));
 }
-$("a-signin").onclick = (e) => { e.preventDefault(); acctDo("in"); };
-$("a-signup").onclick = (e) => { e.preventDefault(); acctDo("up"); };
+document.querySelectorAll(".atab").forEach(b => b.onclick = () => acctMode(b.dataset.m));
+const acctErr = (m) => /Invalid login/i.test(m) ? "E-mail ou mot de passe incorrect." : /already registered|already been registered/i.test(m) ? "Un compte existe déjà avec cet e-mail : utilise « Se connecter »." : /not confirmed/i.test(m) ? "Confirme d'abord ton e-mail : clique sur le lien reçu (regarde aussi les spams)." : /rate limit|too many/i.test(m) ? "Trop d'essais : réessaie dans quelques minutes." : /sending|smtp|email/i.test(m) ? "L'e-mail de confirmation n'a pas pu être envoyé. Réessaie plus tard." : "Erreur : " + m;
+$("a-in").addEventListener("submit", async (e) => {
+  e.preventDefault(); const msg = $("a-msg");
+  const email = $("a-email").value.trim(), pw = $("a-pw").value;
+  if (!email || !pw){ msg.textContent = "Entre ton e-mail et ton mot de passe."; return; }
+  msg.textContent = "Connexion…";
+  try{ await ACCT.signIn(email, pw); $("a-pw").value = ""; $("acct-dlg").close(); }catch(err){ msg.textContent = acctErr(err.message || ""); }
+});
+$("a-up").addEventListener("submit", async (e) => {
+  e.preventDefault(); const msg = $("a-msg");
+  const first = $("u-first").value.trim(), last = $("u-last").value.trim(), email = $("u-email").value.trim(), pw = $("u-pw").value, pw2 = $("u-pw2").value;
+  if (!first || !last){ msg.textContent = "Entre ton prénom et ton nom."; return; }
+  if (!email){ msg.textContent = "Entre ton e-mail."; return; }
+  if (pw.length < 6){ msg.textContent = "Le mot de passe doit faire au moins 6 caractères."; return; }
+  if (pw !== pw2){ msg.textContent = "Les deux mots de passe ne sont pas identiques."; return; }
+  msg.textContent = "Création du compte…";
+  try{
+    const r = await ACCT.signUp(email, pw, first, last);
+    $("u-pw").value = ""; $("u-pw2").value = "";
+    if (r === "ok") $("acct-dlg").close();
+    else { acctMode("in"); $("a-email").value = email; $("a-msg").textContent = "Compte créé ! Ouvre l'e-mail « Sémio » reçu à " + email + " (regarde aussi les spams) et clique sur le lien pour l'activer."; }
+  }catch(err){ msg.textContent = acctErr(err.message || ""); }
+});
 $("hist-btn").onclick = () => { $("hist-dlg").showModal(); showHistList(); };
 $("h-close").onclick = () => $("hist-dlg").close();
 async function showHistList(){
