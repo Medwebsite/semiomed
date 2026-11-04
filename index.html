@@ -32,6 +32,7 @@
 :root[data-theme="light"] header.top{--ink:#eef1f8;--muted:#b8c3da;--accent:#d4af37;--accent-2:#f1d77e}
 .acctbar .actions{align-items:center;justify-content:flex-end}.acctbar .actions>*{flex:0 0 auto!important;width:auto}
 .tsbox{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:60}
+.tstoast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:61;background:var(--ok-soft);color:var(--ok);border:1px solid var(--ok);border-radius:8px;padding:8px 14px;font-size:14px}
 .tswidget{min-height:0;margin:4px 0 10px}
 .langsel{background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;font-size:14px}
 [dir="rtl"] .msg.a, [dir="rtl"] .msg.u{text-align:start}
@@ -440,6 +441,7 @@ function getPass(force){
       const j = await r.json().catch(() => ({}));
       if (!j.pass) throw new Error("Vérification anti-robot refusée. Recharge la page.");
       PASS = { v: j.pass, exp: +j.pass.split(".")[0] }; try{ localStorage.setItem("semio-pass", JSON.stringify(PASS)); }catch{}
+      const toast = document.createElement("div"); toast.className = "tstoast"; toast.textContent = "✓ Vérification anti-robot réussie"; document.body.append(toast); setTimeout(() => toast.remove(), 4000);
       return PASS.v;
     } finally { box.replaceChildren(); box.hidden = true; passWait = null; }
   })();
@@ -1532,6 +1534,7 @@ const I18N_RX = [
   [/^(Discussion|Cas clinique|Examen|Cours|Mécanisme|Recherche) · (.+)$/, null],
 ];
 Object.assign(I18N, {"Valide d'abord la vérification anti-robot ci-dessus.": ["Please complete the anti-bot check above first.", "أكمل أولاً التحقق من أنك لست روبوتاً أعلاه."], "Trop de questions en peu de temps : attends une minute puis réessaie.": ["Too many questions in a short time: wait a minute and try again.", "أسئلة كثيرة في وقت قصير: انتظر دقيقة ثم أعد المحاولة."]});
+Object.assign(I18N, {"✓ Vérification anti-robot réussie": ["✓ Anti-bot check passed", "✓ تم التحقق بنجاح"]});
 let LANG = store.get("semio-lang") || "fr";
 const LI = () => (LANG === "en" ? 0 : 1);
 function trText(s){
