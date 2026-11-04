@@ -1103,7 +1103,7 @@ $("chat-form").addEventListener("submit", async ev => {
   }
   let last = 0;
   try{
-    const webNote = web.length ? "\n\nRésultats d'une recherche sur Wikipédia faite aujourd'hui (" + new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) + "). Ils sont plus récents que tes connaissances et ils sont exacts : ne dis jamais qu'un événement passé n'a pas encore eu lieu ou que personne ne le connaît. Pour les faits récents, appuie-toi d'abord sur eux et réponds directement (ne dis pas « d'après les informations fournies »). S'ils ne contiennent pas la réponse, dis-le en une phrase et donne ce que tu sais en précisant l'année de ton information. Réponds dans la langue de la personne.\n\n" + web.map(w => `[${w.title}]\n${w.text}`).join("\n\n") : "";
+    const webNote = web.length ? "\n\nRésultats d'une recherche sur le web faite aujourd'hui (" + new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) + "). Ils sont plus récents que tes connaissances et ils sont exacts : ne dis jamais qu'un événement passé n'a pas encore eu lieu ou que personne ne le connaît. Pour les faits récents, appuie-toi d'abord sur eux et réponds directement (ne dis pas « d'après les informations fournies »). S'ils ne contiennent pas la réponse, dis-le en une phrase et donne ce que tu sais en précisant l'année de ton information. Réponds dans la langue de la personne.\n\n" + web.map(w => `[${w.title}]\n${w.text}`).join("\n\n") : "";
     const libNote = hits.length ? "\n\nContexte facultatif : extraits de la bibliothèque de l'utilisateur. Utilise-les seulement s'ils aident à répondre. Ne les mentionne jamais (ne dis pas « d'après les extraits » ni « ce n'est pas dans les livres ») : réponds toujours normalement avec tes connaissances.\n\n" + hits.map(h => `[${h.short}, p. ${h.page}]\n${h.text.slice(0, 800)}`).join("\n\n") : "";
     const sysc = (webNote || libNote) ? { role: "system", content: sys.content + webNote + libNote } : sys;
     const text = await generate([sysc, ...chat.history.slice(-12), user(full)], $("short-chat").checked ? 350 : 900, (t, tps) => {
@@ -1123,6 +1123,10 @@ async function webSearch(q, hist){
   const ctxt = hist.map(m => (m.role === "user" ? "Question : " : "Réponse : ") + String(m.content).slice(0, 300)).join("\n");
   const kwTxt = await genRemote([{ role: "user", content: `Conversation :\n${ctxt}\nNouvelle question : ${q}\n\nNous sommes en ${year}. Écris deux requêtes de recherche Wikipédia pour trouver la réponse (3 à 6 mots-clés précis, avec l'année si c'est utile) : ligne 1 en anglais, ligne 2 en français. Réponds uniquement par ces deux lignes.` }], 40, () => {}, "pro", 0);
   const lines = (kwTxt || q).split("\n").map(l => l.replace(/^\s*(\d[\.\)]|ligne\s*\d\s*:|-)\s*/i, "").replace(/["«»*]/g, " ").trim()).filter(Boolean);
+  try{
+    const r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ search: lines[0] || q }) });
+    if (r.ok){ const j = await r.json(); const res = (j.results || []).filter(x => x.url && x.text); if (res.length) return res; }
+  }catch{}
   const plan = [["en", lines[0] || q, 4], ["fr", lines[1] || q, 2]];
   if (!/20\d\d/.test(plan[0][1])) plan.unshift(["en", year + " " + plan[0][1], 3]);
   const titles = [];
@@ -1274,6 +1278,36 @@ const ECG_MEASURE = `Tu regardes un ECG. NE CONCLUS RIEN, ne donne aucun diagnos
 8. Ondes T négatives : dans quelles dérivations ?
 9. PR et QT en petits carreaux.
 Si un point n'est pas lisible, écris « illisible ».`;
+const ECG_JSON = `Tu regardes un ECG. Ne donne AUCUN diagnostic. Observe attentivement chaque dérivation, puis réponds UNIQUEMENT par ce JSON rempli (null si illisible, mesures en ms ou en mm, 1 petit carreau = 40 ms = 1 mm) :
+{"fc": nombre, "rr_reguliers": true/false, "onde_P_devant_chaque_QRS": true/false, "P_sans_lien_avec_QRS": true/false, "ondes_F_dents_de_scie": true/false, "ligne_de_base_irreguliere_sans_P": true/false, "PR_ms": nombre, "onde_delta_empatement_initial_QRS": true/false, "QRS_ms": nombre, "V1": "rS | RSR' ou rSR' | QS | R dominant | qR | autre", "V6": "qRs | R large sans onde q | RS | rS | autre", "S_large_DI_V6": true/false, "axe": "normal | gauche | droit | extreme", "S_V1_mm": nombre, "R_V5_mm": nombre, "R_V6_mm": nombre, "R_aVL_mm": nombre, "ST_sus_derivations": ["..."], "ST_sus_forme": "concave | convexe | null", "ST_sous_derivations": ["..."], "sous_decalage_PR": true/false, "T_negatives_derivations": ["..."], "T_pointues_amples": true/false, "Q_pathologiques_derivations": ["..."], "QTc_ms": nombre}`;
+function ecgRules(m){
+  const out = [], n = (x) => (typeof x === "number" && isFinite(x) ? x : null);
+  const fc = n(m.fc), pr = n(m.PR_ms), qrs = n(m.QRS_ms);
+  const v1 = String(m.V1 || ""), v6 = String(m.V6 || "");
+  const sus = Array.isArray(m.ST_sus_derivations) ? m.ST_sus_derivations.filter(Boolean) : [];
+  if (m.P_sans_lien_avec_QRS) out.push("Ondes P sans lien avec les QRS : rechercher un BAV du 3e degré (dissociation auriculo-ventriculaire).");
+  if (m.ondes_F_dents_de_scie) out.push("Ondes F en dents de scie : rechercher un flutter auriculaire.");
+  if (m.ligne_de_base_irreguliere_sans_P && m.rr_reguliers === false) out.push("RR irréguliers sans onde P visible : rechercher une fibrillation atriale.");
+  if (fc != null && fc < 60) out.push(`FC ≈ ${fc}/min (< 60) : bradycardie, préciser sinusale ou non.`);
+  if (fc != null && fc > 100) out.push(`FC ≈ ${fc}/min (> 100) : tachycardie, préciser le mécanisme.`);
+  if (pr != null && pr > 200) out.push(`PR ≈ ${pr} ms (> 200) : BAV du 1er degré possible.`);
+  if ((pr != null && pr < 120) || m.onde_delta_empatement_initial_QRS) out.push("PR court et/ou empâtement initial du QRS : rechercher un syndrome de Wolff-Parkinson-White (PR < 120 ms + onde delta + QRS élargi).");
+  if (qrs != null && qrs >= 120){
+    if (/RSR|rSR|qR|R dominant/i.test(v1) || m.S_large_DI_V6) out.push(`QRS ≈ ${qrs} ms (≥ 120) avec aspect ${v1 || "?"} en V1 : rechercher un bloc de branche droit complet (rSR' en V1, S large en DI et V6).`);
+    else if (/QS|rS/i.test(v1) || /sans onde q|R large/i.test(v6)) out.push(`QRS ≈ ${qrs} ms (≥ 120) avec ${v1 || "?"} en V1 et ${v6 || "?"} en V6 : rechercher un bloc de branche gauche complet (QS/rS en V1, R large sans q en DI-V6).`);
+    else out.push(`QRS ≈ ${qrs} ms (≥ 120) : QRS large, préciser bloc de branche, WPW, rythme ventriculaire ou hyperkaliémie.`);
+  }
+  const sok = (n(m.S_V1_mm) || 0) + Math.max(n(m.R_V5_mm) || 0, n(m.R_V6_mm) || 0);
+  if (sok >= 35) out.push(`Sokolow ≈ ${sok} mm (S V1 + R V5/V6 ≥ 35) : rechercher une hypertrophie ventriculaire gauche.`);
+  if ((n(m.R_aVL_mm) || 0) >= 11) out.push(`R aVL ≈ ${m.R_aVL_mm} mm (≥ 11) : argument pour une hypertrophie ventriculaire gauche.`);
+  if (sus.length >= 6 || (sus.length >= 4 && (m.ST_sus_forme === "concave" || m.sous_decalage_PR))) out.push(`Sus-décalage ST diffus (${sus.join(", ")})${m.ST_sus_forme ? ", " + m.ST_sus_forme : ""}${m.sous_decalage_PR ? ", avec sous-décalage de PR" : ""} : rechercher une péricardite aiguë (sus-ST concave diffus sans miroir, sous-décalage de PR).`);
+  else if (sus.length) out.push(`Sus-décalage ST en ${sus.join(", ")}${(m.ST_sous_derivations || []).length ? " avec sous-décalage en " + m.ST_sous_derivations.join(", ") : ""} : rechercher un SCA avec sus-décalage de ST (systématisé, avec miroir).`);
+  if (m.T_pointues_amples) out.push("Ondes T amples et pointues : rechercher une hyperkaliémie (puis aplatissement de P, QRS large).");
+  if ((m.Q_pathologiques_derivations || []).length) out.push(`Ondes Q en ${m.Q_pathologiques_derivations.join(", ")} : rechercher une nécrose (ancien infarctus) si Q ≥ 40 ms.`);
+  return out;
+}
+const ECG_CHECK = `Pour chacun de ces diagnostics, vérifie le critère sur l'image avant de conclure (ne retiens que ceux qui sont vraiment remplis) : bloc de branche gauche (QRS ≥ 120 ms, QS ou rS en V1, R large sans q en DI, aVL, V5-V6) ; bloc de branche droit (QRS ≥ 120 ms, rSR' en V1-V2, S large en DI et V6) ; Wolff-Parkinson-White (PR < 120 ms, onde delta, QRS élargi) ; hypertrophie ventriculaire gauche (Sokolow S V1 + R V5 ou V6 ≥ 35 mm, ou R aVL ≥ 11 mm) ; péricardite aiguë (sus-décalage ST concave diffus sans miroir, sous-décalage de PR) ; SCA avec sus-décalage de ST (sus-ST systématisé à un territoire avec image en miroir) ; fibrillation atriale (RR irréguliers, pas d'onde P) ; flutter (ondes F en dents de scie, souvent 300/min) ; BAV (PR > 200 ms, ondes P bloquées, ou dissociation complète) ; bradycardie (< 60/min) ou tachycardie (> 100/min) ; hyperkaliémie (T amples et pointues, P aplaties, QRS large).`;
+function parseJSON(t){ try{ const s = t.indexOf("{"), e = t.lastIndexOf("}"); return JSON.parse(t.slice(s, e + 1)); }catch{ return null; } }
 function examPrompt(type, patient, ctx, q, facts){
   return `Interprète en détail cet examen : ${type}.
 Patient : ${patient}.
@@ -1304,9 +1338,11 @@ $("f-exam").addEventListener("submit", ev => {
     let facts = "";
     if (type === "ECG" && imgs.length){
       status.textContent = "Mesure du tracé ECG (étape 1/2)…";
-      facts = await quickAsk([{ type: "text", text: ECG_MEASURE }, ...imgParts], 700);
+      const m = parseJSON(await quickAsk([{ type: "text", text: ECG_JSON }, ...imgParts], 600)) || {};
+      const rules = ecgRules(m);
+      facts = "Mesures relevées : " + JSON.stringify(m) + "\n\nPistes calculées à partir de ces mesures (à confirmer ou à rejeter sur l'image) :\n" + (rules.length ? rules.map(x => "- " + x).join("\n") : "- aucune anomalie suggérée par les mesures") + "\n\n" + ECG_CHECK;
     }
-    if (type === "ECG") note = (note ? note + " " : "") + "Attention : la lecture d'ECG par Sémio est expérimentale. Dans nos tests, elle reconnaît bien un ECG normal ou un infarctus, mais elle rate souvent les blocs de branche, le WPW, la péricardite, l'hypertrophie ventriculaire et les bradycardies. Fais toujours relire l'ECG par un médecin.";
+    if (type === "ECG") note = (note ? note + " " : "") + "Attention : la lecture d'ECG par Sémio reste expérimentale (environ la moitié des tracés correctement interprétés dans nos tests : bons résultats sur les blocs de branche, l'infarctus et le BAV complet, mais erreurs fréquentes sur la fréquence, la fibrillation atriale, le flutter, le WPW, la péricardite et l'hypertrophie). Fais toujours relire l'ECG par un médecin.";
     return { content: [{ type: "text", text: examPrompt(type, patient, ctx, q, facts) }, ...imgParts], note };
   }, imgs);
 });
