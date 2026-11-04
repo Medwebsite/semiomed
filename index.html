@@ -432,7 +432,10 @@ function getPass(force){
     const box = document.getElementById("ts-box"); const holder = document.createElement("div"); box.replaceChildren(holder); box.hidden = false;
     try{
       const ts = await loadTS();
-      const token = await new Promise((res, rej) => ts.render(holder, { sitekey: TS_KEY, appearance: "interaction-only", language: tsLang(), callback: res, "error-callback": () => rej(new Error("Vérification anti-robot échouée. Recharge la page.")) }));
+      const token = await Promise.race([
+        new Promise((res, rej) => ts.render(holder, { sitekey: TS_KEY, appearance: "interaction-only", language: tsLang(), callback: res, "error-callback": () => rej(new Error("Vérification anti-robot échouée. Recharge la page.")) })),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("Vérification anti-robot trop longue.")), 30000)),
+      ]);
       const r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ turnstile: token }) });
       const j = await r.json().catch(() => ({}));
       if (!j.pass) throw new Error("Vérification anti-robot refusée. Recharge la page.");
@@ -443,7 +446,8 @@ function getPass(force){
   return passWait;
 }
 async function apiFetch(payload, signal){
-  let r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, pass: await getPass() }), signal });
+  let pass; try{ pass = await getPass(); }catch{}
+  let r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, pass }), signal });
   if (r.status === 401){ r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, pass: await getPass(true) }), signal }); }
   return r;
 }
