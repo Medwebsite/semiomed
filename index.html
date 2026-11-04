@@ -31,6 +31,8 @@
 :root[data-theme="light"] body{background:radial-gradient(1200px 600px at 85% -10%,rgba(212,175,55,.12),transparent 60%),var(--bg)}
 :root[data-theme="light"] header.top{--ink:#eef1f8;--muted:#b8c3da;--accent:#d4af37;--accent-2:#f1d77e}
 .acctbar .actions{align-items:center;justify-content:flex-end}.acctbar .actions>*{flex:0 0 auto!important;width:auto}
+.tsbox{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:60}
+.tswidget{min-height:0;margin:4px 0 10px}
 .langsel{background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;font-size:14px}
 [dir="rtl"] .msg.a, [dir="rtl"] .msg.u{text-align:start}
 *{box-sizing:border-box}
@@ -355,6 +357,7 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
     </div>
   </section>
 
+  <div id="ts-box" class="tsbox" hidden></div>
   <dialog class="viewer" id="acct-dlg">
     <div class="vhead"><strong>Compte Sémio</strong><span class="actions"><button class="btn btn-ghost btn-sm" id="a-close" type="button">Fermer</button></span></div>
     <div class="vbody acct">
@@ -362,6 +365,7 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
       <form id="a-in" autocomplete="on">
         <div class="field"><label for="a-email">E-mail</label><input type="email" id="a-email" autocomplete="email" required></div>
         <div class="field"><label for="a-pw">Mot de passe</label><input type="password" id="a-pw" autocomplete="current-password" required></div>
+        <div class="tswidget" id="ts-in"></div>
         <div class="actions"><button class="btn btn-primary btn-sm" id="a-signin" type="submit">Se connecter</button></div>
         <p class="note">Pas encore de compte ? Clique sur « Créer un compte » en haut.</p>
       </form>
@@ -372,6 +376,7 @@ dialog.viewer::backdrop{background:rgba(4,8,20,.75)}
         <div class="field"><label for="u-email">E-mail</label><input type="email" id="u-email" autocomplete="email" required></div>
         <div class="field"><label for="u-pw">Mot de passe (6 caractères minimum)</label><input type="password" id="u-pw" autocomplete="new-password" required></div>
         <div class="field"><label for="u-pw2">Confirme le mot de passe</label><input type="password" id="u-pw2" autocomplete="new-password" required></div>
+        <div class="tswidget" id="ts-up"></div>
         <div class="actions"><button class="btn btn-primary btn-sm" id="a-signup" type="submit">Créer mon compte</button></div>
         <p class="note">Ne mets jamais de nom ou d'information permettant de reconnaître un patient : l'historique est enregistré sur le serveur de Sémio.</p>
       </form>
@@ -407,6 +412,41 @@ const store = { get(k){ try{ return localStorage.getItem(k); }catch{ return null
 const wllama = new Wllama({ default: "https://cdn.jsdelivr.net/npm/@wllama/wllama@3.8.1/esm/wasm/wllama.wasm" });
 let ready = false, busy = false, ctl = null, localReady = false;
 const API_URL = "https://semio-api.lamziouaq54.workers.dev/";
+const TS_KEY = "0x4AAAAAAFzmADV_lGToBkyN";
+let tsReady = null;
+function loadTS(){
+  return tsReady ||= new Promise((res, rej) => {
+    if (window.turnstile) return res(window.turnstile);
+    const s = document.createElement("script"); s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"; s.async = true;
+    s.onload = () => res(window.turnstile); s.onerror = () => { tsReady = null; rej(new Error("Vérification anti-robot indisponible. Réessaie.")); };
+    document.head.append(s);
+  });
+}
+const tsLang = () => { try{ return LANG === "ar" ? "ar" : LANG === "en" ? "en" : "fr"; }catch{ return "fr"; } };
+let PASS = null; try{ PASS = JSON.parse(localStorage.getItem("semio-pass") || "null"); }catch{}
+let passWait = null;
+function getPass(force){
+  if (!force && PASS && PASS.exp - 120 > Date.now() / 1000) return Promise.resolve(PASS.v);
+  if (passWait) return passWait;
+  passWait = (async () => {
+    const box = document.getElementById("ts-box"); const holder = document.createElement("div"); box.replaceChildren(holder); box.hidden = false;
+    try{
+      const ts = await loadTS();
+      const token = await new Promise((res, rej) => ts.render(holder, { sitekey: TS_KEY, appearance: "interaction-only", language: tsLang(), callback: res, "error-callback": () => rej(new Error("Vérification anti-robot échouée. Recharge la page.")) }));
+      const r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ turnstile: token }) });
+      const j = await r.json().catch(() => ({}));
+      if (!j.pass) throw new Error("Vérification anti-robot refusée. Recharge la page.");
+      PASS = { v: j.pass, exp: +j.pass.split(".")[0] }; try{ localStorage.setItem("semio-pass", JSON.stringify(PASS)); }catch{}
+      return PASS.v;
+    } finally { box.replaceChildren(); box.hidden = true; passWait = null; }
+  })();
+  return passWait;
+}
+async function apiFetch(payload, signal){
+  let r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, pass: await getPass() }), signal });
+  if (r.status === 401){ r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, pass: await getPass(true) }), signal }); }
+  return r;
+}
 let engine = store.get("semio-engine") || "pro";
 $("engine").value = engine;
 function updateEngineUI(){
@@ -470,7 +510,8 @@ async function genRemote(messages, maxTokens, onToken, model = engine, temperatu
 }
 async function genRemote1(messages, maxTokens, onToken, model, temperature){
   let text = "", n = 0, buf = ""; const t0 = performance.now();
-  const r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature }), signal: ctl.signal });
+  const r = await apiFetch({ model, messages, max_tokens: maxTokens, temperature }, ctl.signal);
+  if (r.status === 429){ const e = new Error("Trop de questions en peu de temps : attends une minute puis réessaie."); e.partial = ""; throw e; }
   if (!r.ok) throw new Error("Serveur Sémio : " + r.status + " " + (await r.text()).slice(0, 200));
   const reader = r.body.getReader(); const dec = new TextDecoder();
   try{
@@ -956,9 +997,9 @@ const ACCT = (() => {
       if (Date.now() > s.exp){ try{ set(await call("token?grant_type=refresh_token", { refresh_token: s.rt })); }catch{ set(null); return null; } }
       return s?.at || null;
     },
-    async signIn(email, password){ set(await call("token?grant_type=password", { email, password })); await HIST.migrate(); },
-    async signUp(email, password, first_name, last_name){
-      const j = await call("signup?redirect_to=" + encodeURIComponent(location.origin + location.pathname), { email, password, data: { first_name, last_name } });
+    async signIn(email, password, captcha){ set(await call("token?grant_type=password", { email, password, gotrue_meta_security: { captcha_token: captcha } })); await HIST.migrate(); },
+    async signUp(email, password, first_name, last_name, captcha){
+      const j = await call("signup?redirect_to=" + encodeURIComponent(location.origin + location.pathname), { email, password, data: { first_name, last_name }, gotrue_meta_security: { captcha_token: captcha } });
       if (j.access_token){ set(j); await HIST.migrate(); return "ok"; }
       return "confirm";
     },
@@ -1015,8 +1056,20 @@ $("acct-btn").onclick = () => {
 };
 $("a-close").onclick = () => $("acct-dlg").close();
 $("a-logout").onclick = async () => { await ACCT.signOut(); $("acct-dlg").close(); };
+const TSW = {};
+async function tsWidget(m){
+  const box = $("ts-" + m); if (!box) return;
+  try{
+    const ts = await loadTS();
+    if (TSW[m] != null){ ts.reset(TSW[m]); return; }
+    TSW[m] = ts.render(box, { sitekey: TS_KEY, language: tsLang(), size: "flexible" });
+  }catch(err){ $("a-msg").textContent = err.message; }
+}
+function tsGet(m){ try{ return TSW[m] != null ? window.turnstile.getResponse(TSW[m]) : ""; }catch{ return ""; } }
+function tsReset(m){ try{ if (TSW[m] != null) window.turnstile.reset(TSW[m]); }catch{} }
 function acctMode(m){
   $("a-in").hidden = m !== "in"; $("a-up").hidden = m !== "up"; $("a-out").hidden = m !== "out"; $("a-msg").textContent = "";
+  if (m === "in" || m === "up") tsWidget(m);
   document.querySelectorAll(".atab").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === m ? "true" : "false"));
 }
 document.querySelectorAll(".atab").forEach(b => b.onclick = () => acctMode(b.dataset.m));
@@ -1025,8 +1078,10 @@ $("a-in").addEventListener("submit", async (e) => {
   e.preventDefault(); const msg = $("a-msg");
   const email = $("a-email").value.trim(), pw = $("a-pw").value;
   if (!email || !pw){ msg.textContent = "Entre ton e-mail et ton mot de passe."; return; }
+  const cap = tsGet("in"); if (!cap){ msg.textContent = "Valide d'abord la vérification anti-robot ci-dessus."; return; }
   msg.textContent = "Connexion…";
-  try{ await ACCT.signIn(email, pw); $("a-pw").value = ""; $("acct-dlg").close(); }catch(err){ msg.textContent = acctErr(err.message || ""); }
+  try{ await ACCT.signIn(email, pw, cap); $("a-pw").value = ""; $("acct-dlg").close(); }catch(err){ msg.textContent = acctErr(err.message || ""); }
+  finally{ tsReset("in"); }
 });
 $("a-up").addEventListener("submit", async (e) => {
   e.preventDefault(); const msg = $("a-msg");
@@ -1035,13 +1090,14 @@ $("a-up").addEventListener("submit", async (e) => {
   if (!email){ msg.textContent = "Entre ton e-mail."; return; }
   if (pw.length < 6){ msg.textContent = "Le mot de passe doit faire au moins 6 caractères."; return; }
   if (pw !== pw2){ msg.textContent = "Les deux mots de passe ne sont pas identiques."; return; }
+  const cap = tsGet("up"); if (!cap){ msg.textContent = "Valide d'abord la vérification anti-robot ci-dessus."; return; }
   msg.textContent = "Création du compte…";
   try{
-    const r = await ACCT.signUp(email, pw, first, last);
+    const r = await ACCT.signUp(email, pw, first, last, cap);
     $("u-pw").value = ""; $("u-pw2").value = "";
     if (r === "ok") $("acct-dlg").close();
-    else { acctMode("in"); $("a-email").value = email; $("a-msg").textContent = "Compte créé ! Ouvre l'e-mail « Sémio » reçu à " + email + " (regarde aussi les spams) et clique sur le lien pour l'activer."; }
-  }catch(err){ msg.textContent = acctErr(err.message || ""); }
+    else { tsReset("up"); acctMode("in"); $("a-email").value = email; $("a-msg").textContent = "Compte créé ! Ouvre l'e-mail « Sémio » reçu à " + email + " (regarde aussi les spams) et clique sur le lien pour l'activer."; }
+  }catch(err){ msg.textContent = acctErr(err.message || ""); tsReset("up"); }
 });
 $("hist-btn").onclick = () => { $("hist-dlg").showModal(); showHistList(); };
 $("h-close").onclick = () => $("hist-dlg").close();
@@ -1124,7 +1180,7 @@ async function webSearch(q, hist){
   const kwTxt = await genRemote([{ role: "user", content: `Conversation :\n${ctxt}\nNouvelle question : ${q}\n\nNous sommes en ${year}. Écris deux requêtes de recherche Wikipédia pour trouver la réponse (3 à 6 mots-clés précis, avec l'année si c'est utile) : ligne 1 en anglais, ligne 2 en français. Réponds uniquement par ces deux lignes.` }], 40, () => {}, "pro", 0);
   const lines = (kwTxt || q).split("\n").map(l => l.replace(/^\s*(\d[\.\)]|ligne\s*\d\s*:|-)\s*/i, "").replace(/["«»*]/g, " ").trim()).filter(Boolean);
   try{
-    const r = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ search: lines[0] || q }) });
+    const r = await apiFetch({ search: lines[0] || q });
     if (r.ok){ const j = await r.json(); const res = (j.results || []).filter(x => x.url && x.text); if (res.length) return res; }
   }catch{}
   const plan = [["en", lines[0] || q, 4], ["fr", lines[1] || q, 2]];
@@ -1471,6 +1527,7 @@ const I18N_RX = [
   [/^Recherche d'articles : (.+)$/, ["Searching articles: $1", "البحث عن مقالات: $1"]],
   [/^(Discussion|Cas clinique|Examen|Cours|Mécanisme|Recherche) · (.+)$/, null],
 ];
+Object.assign(I18N, {"Valide d'abord la vérification anti-robot ci-dessus.": ["Please complete the anti-bot check above first.", "أكمل أولاً التحقق من أنك لست روبوتاً أعلاه."], "Trop de questions en peu de temps : attends une minute puis réessaie.": ["Too many questions in a short time: wait a minute and try again.", "أسئلة كثيرة في وقت قصير: انتظر دقيقة ثم أعد المحاولة."]});
 let LANG = store.get("semio-lang") || "fr";
 const LI = () => (LANG === "en" ? 0 : 1);
 function trText(s){
