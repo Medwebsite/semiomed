@@ -1,0 +1,14 @@
+Copyright (c) 2026 YM. Tous droits réservés.
+
+Ce dépôt (code, textes, interface et documents de Sémio) est publié uniquement
+pour consultation. Sans autorisation écrite préalable de l'auteur, il est
+interdit de copier, modifier, redistribuer, republier, héberger ou utiliser ce
+code, en tout ou en partie, y compris pour créer un site ou un service dérivé.
+
+Les éléments de tiers gardent leur propre licence :
+- Sémio-2b : adaptateur entraîné en partie sur des données sous licence non
+  commerciale ; voir sa page Hugging Face (Medwebsite/semio-2b-mistral7b-lora).
+- Modèles de base, bibliothèques JavaScript et manuels libres de droits :
+  licences de leurs auteurs respectifs.
+
+Pour toute demande d'autorisation, ouvrir une « issue » sur ce dépôt.
