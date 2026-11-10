@@ -1,0 +1,32 @@
+name: Vérification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntaxe JavaScript du site
+        run: |
+          node -e "const fs=require('fs');const h=fs.readFileSync('index.html','utf8');const m=[...h.matchAll(/<script type=\"module\">([\s\S]*?)<\/script>/g)];if(!m.length)throw new Error('Script principal introuvable');fs.writeFileSync('site.mjs',m.map(x=>x[1]).join('\n'));"
+          node --check site.mjs
+      - name: Aucun secret dans le code
+        run: |
+          if grep -nE "tvly-[A-Za-z0-9]{10,}|sk-[A-Za-z0-9]{20,}|service_role|0x4AAAAAA[A-Za-z0-9_-]{10,}.*secret" index.html; then
+            echo "Un secret semble présent dans index.html"; exit 1
+          fi
+      - name: En-têtes de sécurité présents
+        run: |
+          test -s _headers
+          grep -q "X-Frame-Options" _headers
+          grep -q "Strict-Transport-Security" _headers
