@@ -571,7 +571,7 @@ Règles :
 const sys = { role: "system", content: SYSTEM + `\nNous sommes le ${new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}. Tes connaissances s'arrêtent à une certaine date : pour l'actualité récente, utilise les résultats de recherche web s'ils sont fournis ; sinon donne ce que tu sais en précisant l'année de ton information. Réponds aussi aux questions générales, même si elles ne sont pas médicales.` };
 const user = (t) => ({ role: "user", content: t });
 const asst = (t) => ({ role: "assistant", content: t });
-const REVIEW = "Relis ta réponse comme un professeur de médecine exigeant. Vérifie : les erreurs (diagnostic, physiopathologie, examens, doses, contre-indications), les oublis importants (diagnostics différentiels graves à ne pas manquer, signes de gravité, urgences thérapeutiques, examens indispensables) et la cohérence avec toutes les données du cas (âge, terrain, constantes, examens). Réécris ensuite la réponse complète, corrigée et améliorée, avec exactement la même structure de titres. Ne mentionne pas cette relecture.";
+const REVIEW = "Relis ta réponse comme un professeur de médecine exigeant. Vérifie : les erreurs (diagnostic, physiopathologie, examens, doses, contre-indications), le délai du geste qui sauve (immédiat, avant tout examen, quand c'est la règle), les doses vagues ou trop larges, les oublis importants (antalgie, diagnostics différentiels graves à ne pas manquer, signes de gravité, urgences thérapeutiques, examens indispensables) et la cohérence avec toutes les données du cas (âge, terrain, constantes, examens). Réécris ensuite la réponse complète, corrigée et améliorée, avec exactement la même structure de titres. Ne mentionne pas cette relecture.";
 const SHORT = "\n\nIMPORTANT : réponse COURTE, 150 mots maximum, uniquement l'essentiel, en puces.";
 
 const MODULES = {
@@ -602,7 +602,7 @@ Réponds avec exactement ces sections, dans cet ordre :
 ## Examens complémentaires
 (classés : immédiat, rapide, différé, avec le but de chaque examen)
 ## Traitement initial
-(mesures immédiates puis traitement du diagnostic le plus probable, avec doses usuelles adultes et contre-indications)
+(commence par le geste qui sauve la vie et précise son délai : « immédiatement, avant tout examen » quand c'est la règle ; puis mesures immédiates, antalgie si douleur, et traitement du diagnostic le plus probable. Pour chaque médicament : dose, voie et contre-indications. Chez l'enfant : dose en mg/kg par prise avec la dose maximale. Donne les doses standard bien établies avec précision ; seulement si tu n'es vraiment pas sûr d'une dose, écris « dose à vérifier dans le protocole local » au lieu d'une fourchette vague)
 ## À compléter
 ## Point pédagogique` };
     }
