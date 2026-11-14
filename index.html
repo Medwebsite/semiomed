@@ -409,6 +409,9 @@ pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(URL.createObjectURL(new Blo
 
 const HF_REPO = "Medwebsite/semio-1-E2B-GGUF";
 const $ = (id) => document.getElementById(id);
+// Retire les balises en répétant le remplacement jusqu'à stabilité, puis les chevrons restants.
+const stripTags = (s) => { s = String(s == null ? "" : s); let p; do { p = s; s = s.replace(/<[^>]*>/g, ""); } while (s !== p); return s.replace(/[<>]/g, ""); };
+const stripAll = (s, re) => { let p; do { p = s; s = s.replace(re, ""); } while (s !== p); return s; };
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const store = { get(k){ try{ return localStorage.getItem(k); }catch{ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch{} } };
 
@@ -786,14 +789,14 @@ $("f-rech").addEventListener("submit", async ev => {
   if (!arts.length){ status.replaceChildren(el("div", "banner info", "Aucun article trouvé pour « " + kw + " ». Reformule la question (en anglais si possible).")); refreshButtons(); return; }
   const refs = el("ol", "refs");
   arts.forEach((a, i) => {
-    const li = el("li"); const link = el("a", null, "[" + (i+1) + "] " + a.title.replace(/<[^>]+>/g, ""));
+    const li = el("li"); const link = el("a", null, "[" + (i+1) + "] " + stripTags(a.title));
     link.href = a.pmid ? "https://pubmed.ncbi.nlm.nih.gov/" + a.pmid + "/" : "https://europepmc.org/article/" + a.source + "/" + a.id; link.target = "_blank"; link.rel = "noopener";
     const au = (a.authorString || "").split(",");
     li.append(link, el("div", "meta", [a.authorString && au.slice(0,3).join(",") + (au.length > 3 ? " et al." : ""), a.journalTitle, a.pubYear].filter(Boolean).join(" · ")));
     refs.append(li);
   });
   status.replaceChildren(el("h3", null, "Articles trouvés"), refs);
-  const corpus = arts.map((a, i) => `[${i+1}] ${a.title.replace(/<[^>]+>/g,"")} (${a.journalTitle || ""} ${a.pubYear || ""})\nRésumé : ${(a.abstractText || "").replace(/<[^>]+>/g, "").slice(0, 1400)}`).join("\n\n");
+  const corpus = arts.map((a, i) => `[${i+1}] ${stripTags(a.title)} (${a.journalTitle || ""} ${a.pubYear || ""})\nRésumé : ${stripTags(a.abstractText).slice(0, 1400)}`).join("\n\n");
   const prompt = `Question de l'étudiant : « ${q} »\n\nVoici les résumés d'articles scientifiques trouvés :\n\n${corpus}\n\nEn te basant UNIQUEMENT sur ces résumés, réponds en français avec : ## Réponse courte, ## Ce que montrent les articles (chaque affirmation suivie de sa référence [n]), ## Niveau de preuve et limites. N'ajoute aucun article qui n'est pas dans la liste.`;
   busy = true; refreshButtons();
   const a = el("div", "msg a", "Lecture des résumés…"); thread.append(a);
@@ -802,7 +805,7 @@ $("f-rech").addEventListener("submit", async ev => {
   try{
     const text = await generate([sys, user(prompt)], MODULES.rech.max, (t, tps) => { const now = performance.now(); if (now - last < 80) return; last = now; a.replaceChildren(md(t)); speed.textContent = tps.toFixed(1) + " tokens/s"; });
     a.replaceChildren(md(text)); s.history = [user(prompt), asst(text)];
-    if (text) HIST.save({ kind: "rech", title: q, msgs: [H("u", q), H("a", "**Articles trouvés**\n\n" + arts.map((x, i) => `${i+1}. ${x.title.replace(/<[^>]+>/g, "")} — ${x.pmid ? "https://pubmed.ncbi.nlm.nih.gov/" + x.pmid + "/" : "https://europepmc.org/article/" + x.source + "/" + x.id}`).join("\n") + "\n\n" + text)] });
+    if (text) HIST.save({ kind: "rech", title: q, msgs: [H("u", q), H("a", "**Articles trouvés**\n\n" + arts.map((x, i) => `${i+1}. ${stripTags(x.title)} — ${x.pmid ? "https://pubmed.ncbi.nlm.nih.gov/" + x.pmid + "/" : "https://europepmc.org/article/" + x.source + "/" + x.id}`).join("\n") + "\n\n" + text)] });
   }catch(err){ a.replaceChildren(el("div", "banner err", "Erreur : " + err.message)); }
   finally{ busy = false; s.composer.querySelector(".stop").hidden = true; refreshButtons(); }
 });
@@ -1222,7 +1225,7 @@ async function webSearch(q, hist){
   return pages.filter(Boolean);
 }
 function wikiText(s){
-  s = s.replace(/<ref[^>]*\/>/g, "").replace(/<ref[\s\S]*?<\/ref>/g, "").replace(/<!--[\s\S]*?-->/g, "");
+  s = stripAll(stripAll(stripAll(s, /<ref[^>]*\/>/g), /<ref[\s\S]*?<\/ref>/g), /<!--[\s\S]*?-->/g);
   for (let i = 0; i < 5; i++) s = s.replace(/\{\{[^{}]*\}\}/g, "");
   s = s.replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, "$1").replace(/\[https?:\S+ ([^\]]*)\]/g, "$1");
   s = s.replace(/'{2,}/g, "").replace(/^\{\|.*$/gm, "").replace(/^\|\}.*$/gm, "").replace(/^\|-.*$/gm, "\n");

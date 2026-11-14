@@ -236,9 +236,9 @@ const mSel=new THREE.MeshLambertMaterial({color:'#19c2dc',emissive:'#0a5564'}),m
 const meshes=[];let sel=null,hov=null,ghost=false,isolate=null,flash=null,dirty=true,multi=false;
 const S=new Set(),hist=[];
 const hidden=new Set(),added=new Set(),root=document.documentElement;
-const ST={lang:'fr',sex:'M'};
-try{const s=JSON.parse(localStorage.getItem('corpus3d')||'{}');if(s.lang==='en'||s.lang==='fr')ST.lang=s.lang;if(s.sex==='F'||s.sex==='M')ST.sex=s.sex;if(s.theme==='dark'||s.theme==='light')root.dataset.theme=s.theme}catch(e){}
-function save(){try{localStorage.setItem('corpus3d',JSON.stringify({lang:ST.lang,sex:ST.sex,theme:root.dataset.theme||''}))}catch(e){}}
+const ST={lang:'fr',mdl:'M'};
+try{const s=JSON.parse(localStorage.getItem('corpus3d')||'{}');if(s.lang==='en'||s.lang==='fr')ST.lang=s.lang;{const v=s.mdl||s.sex;if(v==='F'||v==='M')ST.mdl=v}if(s.theme==='dark'||s.theme==='light')root.dataset.theme=s.theme}catch(e){}
+function save(){try{localStorage.setItem('corpus3d',JSON.stringify({lang:ST.lang,mdl:ST.mdl,theme:root.dataset.theme||''}))}catch(e){}}
 const TX={fr:{sub:"Atlas d'anatomie humaine interactif",male:'Homme',female:'Femme',femNote:"Version femme : utérus, ovaires, trompes, vagin et seins, placés sur le même squelette et les mêmes muscles que la version homme.",
  explore:'Explorer',quiz:'Quiz',search:'Rechercher : fémur, nerf médian, foie…',systems:'Systèmes',showAll:'Tout réafficher',find:'Trouver',name:'Nommer',
  help1:'Cliquez sur la structure demandée dans le modèle. Masquez des systèmes si elle est profonde.',help2:'Quelle est la structure surlignée ?',findP:'Trouvez : ',next:'Question suivante',showAns:'Voir la réponse',
@@ -260,7 +260,7 @@ en:{sub:'Interactive human anatomy atlas',male:'Male',female:'Female',femNote:'F
  good:'Correct.',answer:'Answer: ',first:'Correct on the first try.',after:n=>'Found after '+n+' tries.',thisIs:n=>'This is: '+n+'. Try again.',needSys:'Show at least one system to start the quiz.',
  cv:'3D anatomical model. Click a structure to open its card.'}};
 const t=k=>TX[ST.lang][k],nm=p=>ST.lang==='fr'?p.fr:p.en,alt=p=>ST.lang==='fr'?p.en:p.fr,sysLabel=s=>SYS.find(x=>x[0]===s)[ST.lang==='fr'?1:4];
-const sexOK=p=>!p.sex||p.sex===ST.sex;
+const sexOK=p=>!p.sex||p.sex===ST.mdl;
 Object.assign(TX.fr,{home:'Accueil',askSemio:'Demander à Sémio',semioQ:n=>'Explique-moi l\'anatomie de : '+n+' (situation, rapports, vascularisation, innervation et intérêt clinique).',hideCard:'Masquer la fiche',showCard:'Afficher la fiche',model3d:'Modèle 3D complet',searchBtn:'Recherche',hsearch:'Rechercher une structure : fémur, nerf médian, ventricule…',loadingS:'Le modèle se charge encore, réessayez dans un instant.',
  r_body:'Corps entier',r_head:'Tête et cou',r_trunk:'Tronc',r_arm:'Membre supérieur',r_leg:'Membre inférieur',
  g_ms:'Système musculosquelettique',g_cv:'Système cardiovasculaire',g_ns:'Système nerveux',g_se:'Organes des sens',g_re:'Système respiratoire',g_di:'Système digestif',g_ug:'Système urogénital',g_gl:'Glandes',g_ly:'Système lymphatique',g_all:'Tous les systèmes',
@@ -339,10 +339,10 @@ function renderHome(){const nav=$('#regions');nav.innerHTML='';Object.keys(RG).f
  const cat=$('#cat');cat.innerHTML='';GORD.forEach(g=>{const list=PR.filter(p=>p.r===region&&p.g===g);if(!list.length)return;
   const sec=document.createElement('section');sec.innerHTML='<h2>'+t('g_'+g)+'</h2>';const grid=document.createElement('div');grid.className='cards';
   list.forEach(p=>{const a=document.createElement('a');a.className='card';a.href='#'+p.id;const fr=ST.lang==='fr';
-   a.innerHTML='<img src="'+TD+p.id+(p.sexThumb&&ST.sex==='F'?'-f':'')+'.webp" alt="" loading="lazy" width="320" height="360"><span class="ct"><b>'+esc(fr?p.fr:p.en)+'</b><small>'+esc(fr?p.sfr:p.sen)+'</small></span>';grid.appendChild(a)});
+   a.innerHTML='<img src="'+TD+p.id+(p.sexThumb&&ST.mdl==='F'?'-f':'')+'.webp" alt="" loading="lazy" width="320" height="360"><span class="ct"><b>'+esc(fr?p.fr:p.en)+'</b><small>'+esc(fr?p.sfr:p.sen)+'</small></span>';grid.appendChild(a)});
   sec.appendChild(grid);cat.appendChild(sec)})}
 function showHome(){cur=null;$('#app').hidden=true;$('#home').hidden=false;renderHome()}
-function openPreset(id,opt){const p=PR.find(x=>x.id===id);if(!p)return showHome();cur=p;if(p.sex&&p.sex!==ST.sex){ST.sex=p.sex;save()}
+function openPreset(id,opt){const p=PR.find(x=>x.id===id);if(!p)return showHome();cur=p;if(p.sex&&p.sex!==ST.mdl){ST.mdl=p.sex;save()}
  hist.length=0;hidden.clear();added.clear();isolate=null;ghost=false;S.clear();sel=null;multi=false;flash=null;mode='x';
  SYS.forEach(s=>{sysOn[s[0]]=p.sys.indexOf(s[0])>=0});rescope();
  $('#home').hidden=true;$('#app').hidden=false;$('#quiz').hidden=true;$('#bQuiz').classList.remove('on');$('#tools').hidden=false;closePops();
@@ -503,7 +503,7 @@ function results(inp,el,onPick,canAdd){const q=norm(inp.value.trim());if(q.lengt
   hit.forEach(m=>{const b=document.createElement('button');b.type='button';b.innerHTML=esc(label(m.userData))+'<small>'+esc(alt(m.userData))+' · '+esc(sysLabel(m.userData.s))+'</small>';b.onclick=()=>onPick(m);row(el,b,canAdd&&cur&&(()=>[m]))});el.hidden=false}
 function row(el,b,get){if(!get){el.appendChild(b);return}const w=document.createElement('div');w.className='rrow';const a=document.createElement('button');a.type='button';a.className='radd';a.textContent=t('add');a.onclick=e=>{e.stopPropagation();const ms=get();if(ms.length===1)sw(ms[0]);addToScene(ms.filter(m=>sexOK(m.userData)));a.textContent=t('added');a.disabled=true};w.appendChild(b);w.appendChild(a);el.appendChild(w)}
 function addToScene(ms){push();ms.forEach(m=>{scope.add(m);added.add(m);hidden.delete(m)});S.clear();ms.forEach(m=>S.add(m));sel=ms[ms.length-1]||null;ghost=false;refresh();card();if(ms.length)focus(ms)}
-const sw=m=>{if(m.userData.sex&&m.userData.sex!==ST.sex){ST.sex=m.userData.sex;save();applyUI()}};
+const sw=m=>{if(m.userData.sex&&m.userData.sex!==ST.mdl){ST.mdl=m.userData.sex;save();applyUI()}};
 const vSearch=()=>results($('#q'),$('#res'),m=>{sw(m);push();select(m,{reveal:true,fly:true});closePops()},true);
 const hSearch=()=>results($('#hq'),$('#hres'),m=>{$('#hres').hidden=true;sw(m);go('corps-tout');setTimeout(()=>{if(cur)select(m,{reveal:true,fly:true})},60)});
 $('#q').addEventListener('input',vSearch);$('#hq').addEventListener('input',hSearch);
@@ -538,10 +538,10 @@ function isDark(){return root.dataset.theme?root.dataset.theme==='dark':matchMed
 function applyUI(){root.lang=ST.lang;document.querySelectorAll('[data-t]').forEach(e=>{e.textContent=t(e.dataset.t)});document.querySelectorAll('#tools button').forEach(b=>{b.title=b.querySelector('span').textContent});
   $('#q').placeholder=t('search');$('#hq').placeholder=t('hsearch');cv.setAttribute('aria-label',t('cv'));$('#theme').textContent=isDark()?t('light'):t('dark');
   $('#lgFR').classList.toggle('on',ST.lang==='fr');$('#lgEN').classList.toggle('on',ST.lang==='en');
-  $('#sexM').classList.toggle('on',ST.sex==='M');$('#sexF').classList.toggle('on',ST.sex==='F');$('#femNote').hidden=ST.sex!=='F';
+  $('#sexM').classList.toggle('on',ST.mdl==='M');$('#sexF').classList.toggle('on',ST.mdl==='F');$('#femNote').hidden=ST.mdl!=='F';
   if(cur){const fr=ST.lang==='fr';$('#vtitle b').textContent=fr?cur.fr:cur.en;$('#vtitle small').textContent=fr?cur.sfr:cur.sen;syncLayers();counts();card();if(mode==='q')next()}else renderHome()}
 function setLang(l){ST.lang=l;save();applyUI()}
-function setSex(s){ST.sex=s;save();[...S].forEach(m=>{if(!sexOK(m.userData))S.delete(m)});if(sel&&!S.has(sel))sel=[...S].pop()||null;refresh();applyUI()}
+function setSex(s){ST.mdl=s;save();[...S].forEach(m=>{if(!sexOK(m.userData))S.delete(m)});if(sel&&!S.has(sel))sel=[...S].pop()||null;refresh();applyUI()}
 $('#lgFR').onclick=()=>setLang('fr');$('#lgEN').onclick=()=>setLang('en');$('#sexM').onclick=()=>setSex('M');$('#sexF').onclick=()=>setSex('F');
 $('#theme').onclick=()=>{root.dataset.theme=isDark()?'light':'dark';save();applyUI();dirty=true};
 // ---------- démarrage
