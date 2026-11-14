@@ -116,6 +116,7 @@ p{margin:0;line-height:1.5}
 @media (max-width:760px){.hbody{grid-template-columns:minmax(0,1fr)}#regions{position:static;flex-direction:row;overflow-x:auto}.reg{flex:none}.reg svg{display:none}.ctl{margin-left:0}
  #vbar{max-width:calc(100% - 82px)}#vtitle{order:9;flex-basis:100%;padding:0 2px}#sysPop,#searchPop,#quiz{top:96px;width:min(290px,calc(100% - 90px))}}
 .reslist .pres{background:var(--chip)}
+.cours{border-top:1px solid var(--line,#8884);padding-top:10px}.cours summary{cursor:pointer;font-weight:600;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.cours summary span{font-weight:400;font-size:12px;opacity:.7}.cours dl{margin-top:10px}
 .chead{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}.chead>div{min-width:0}.chead button{flex:none;font-size:12px;padding:5px 9px}
 #right.min{gap:0}
 @media (min-width:761px) and (max-width:1150px){#right{top:58px;max-height:calc(100% - 116px)}}
@@ -242,7 +243,7 @@ const TX={fr:{sub:"Atlas d'anatomie humaine interactif",male:'Homme',female:'Fem
  score:'Score : ',scoreNote:'Les questions portent sur les systèmes affichés.',included:'Systèmes inclus',front:'Face',back:'Dos',right:'Droite',left:'Gauche',whole:'Corps entier',
  credit:'Modèles 3D : BodyParts3D © DBCLS (CC BY-SA 2.1 JP) · Z-Anatomy (CC BY-SA 4.0) · HuBMAP HRA (CC BY 4.0)',loading:'Chargement du modèle',
  loadErr:"Le modèle n'a pas pu être chargé.",loadErr2:'Rechargez la page. Si le problème continue, vérifiez que le dossier « models » est bien à côté de la page.',
- noRes:'Aucune structure trouvée. Essayez un autre terme, en français ou en anglais.',sR:' (droit)',sL:' (gauche)',cR:'Côté droit',cL:'Côté gauche',noCard:'Fiche détaillée à venir pour cette structure.',frOnly:'',
+ noRes:'Aucune structure trouvée. Essayez un autre terme, en français ou en anglais.',sR:' (droit)',sL:' (gauche)',cR:'Côté droit',cL:'Côté gauche',noCard:'Fiche détaillée à venir pour cette structure.',course:'Dans ton cours',frOnly:'',
  origin:'Origine',insertion:'Terminaison',innerv:'Innervation',action:'Action',center:'Centrer',isolate:'Isoler',ghost:'Transparence',hide:'Masquer',close:'Fermer',views:'Vues',multi:'Sélection multiple',undo:'Annuler',resetAll:'Réinitialiser',nSel:n=>n+' structures sélectionnées',vAnt:'ANT',vPos:'POS',vR:'LAT D',vL:'LAT G',vSup:'SUP',vInf:'INF',regions:'Régions',centerView:'Centrer la vue',rHead:'Tête',rCerv:'Colonne cervicale',rThor:'Rachis thoracique',rLumb:'Rachis lombaire',rShoulder:'Épaule',rElbow:'Coude',rHand:'Main',rHip:'Hanche',rKnee:'Genou',rFoot:'Pied',menu:'Menu',light:'Mode clair',dark:'Mode sombre',
  good:'Bonne réponse.',answer:'Réponse : ',first:'Bonne réponse du premier coup.',after:n=>'Trouvé après '+n+' essais.',thisIs:n=>'Ceci est : '+n+'. Réessayez.',needSys:'Affichez au moins un système pour lancer le quiz.',
  cv:'Modèle anatomique 3D. Cliquez sur une structure pour afficher sa fiche.'},
@@ -252,7 +253,7 @@ en:{sub:'Interactive human anatomy atlas',male:'Male',female:'Female',femNote:'F
  score:'Score: ',scoreNote:'Questions cover the systems currently shown.',included:'Systems included',front:'Front',back:'Back',right:'Right',left:'Left',whole:'Whole body',
  credit:'3D models: BodyParts3D © DBCLS (CC BY-SA 2.1 JP) · Z-Anatomy (CC BY-SA 4.0) · HuBMAP HRA (CC BY 4.0)',loading:'Loading the model',
  loadErr:'The model could not be loaded.',loadErr2:'Reload the page. If it keeps failing, check that the “models” folder sits next to the page.',
- noRes:'No structure found. Try another term, in English or French.',sR:' (right)',sL:' (left)',cR:'Right side',cL:'Left side',noCard:'Detailed card coming soon for this structure.',frOnly:'This card is available in French only for now.',
+ noRes:'No structure found. Try another term, in English or French.',sR:' (right)',sL:' (left)',cR:'Right side',cL:'Left side',noCard:'Detailed card coming soon for this structure.',course:'From your course notes',frOnly:'This card is available in French only for now.',
  origin:'Origin',insertion:'Insertion',innerv:'Innervation',action:'Action',center:'Center',isolate:'Isolate',ghost:'Transparency',hide:'Hide',close:'Close',views:'Views',multi:'Multi-select',undo:'Undo',resetAll:'Reset',nSel:n=>n+' structures selected',vAnt:'ANT',vPos:'POST',vR:'R LAT',vL:'L LAT',vSup:'SUP',vInf:'INF',regions:'Regions',centerView:'Center view',rHead:'Head',rCerv:'Cervical spine',rThor:'Thoracic spine',rLumb:'Lumbar spine',rShoulder:'Shoulder',rElbow:'Elbow',rHand:'Hand',rHip:'Hip',rKnee:'Knee',rFoot:'Foot',menu:'Menu',light:'Light mode',dark:'Dark mode',
  good:'Correct.',answer:'Answer: ',first:'Correct on the first try.',after:n=>'Found after '+n+' tries.',thisIs:n=>'This is: '+n+'. Try again.',needSys:'Show at least one system to start the quiz.',
  cv:'3D anatomical model. Click a structure to open its card.'}};
@@ -273,9 +274,9 @@ const NERVE=/nerve|plexus|branch|root|cord of|trunk|division|ganglion|Chorda|ans
  EYE=/eyeball|Cornea|Lens|Iris|Retina|Sclera|Vitreous|Lacrim|Optic nerve|chamber|Nasolacrimal|Zonular/i,EAR=/Cochlea|Tympanic|Vestibular nerve|Cochlear nerve|Vestibulocochlear|Vestibule|Auditory tube|Semicircular/i,
  RIBS=/côte|sternum|sternal|xiphoïde|thoracique|costal/i,PELV=/Os coxal|Sacrum|lombale/;
 const RG={body:()=>true,head:(u,c)=>c.y>1425,
- trunk:(u,c)=>(c.y>745&&c.y<=1500&&Math.abs(c.x)<150)||/Clavicule|Scapula/.test(u.fr),
+ trunk:(u,c)=>(c.y>745&&c.y<=1500&&Math.abs(c.x)<150)||((u.s==='uro'||u.sex)&&c.y>640&&c.y<=1500&&Math.abs(c.x)<150)||/Clavicule|Scapula/.test(u.fr),
  arm:(u,c)=>(c.x<-150&&c.y>640&&c.y<1460)||(u.side==='D'&&/Clavicule|Scapula/.test(u.fr)),
- leg:(u,c)=>(c.x<-8&&c.x>-200&&(c.y<790||(c.y<905&&c.x<-50&&(u.s==='musc'||u.s==='fasc'||u.s==='lymph'))))||(u.side==='D'&&/Os coxal/.test(u.fr))};
+ leg:(u,c)=>(u.s!=='uro'&&!(u.sex&&c.y>640)&&c.x<-8&&c.x>-200&&(c.y<790||(c.y<905&&c.x<-50&&(u.s==='musc'||u.s==='fasc'||u.s==='lymph'))))||(u.side==='D'&&/Os coxal/.test(u.fr))};
 const PR=[];
 function P(r,g,id,fr,sfr,en,sen,sys,f,o){PR.push(Object.assign({r:r,g:g,id:id,fr:fr,sfr:sfr,en:en,sen:sen,sys:sys,f:f},o||{}))}
 const nvF=u=>u.s!=='nerv'||NERVE.test(u.en),veF=u=>u.s!=='cardio'||VEIN.test(u.en),arF=u=>u.s!=='cardio'||(!VEIN.test(u.en)&&!CHAMB.test(u.en));
@@ -373,7 +374,7 @@ function loop(){requestAnimationFrame(loop);if($('#app').hidden)return;
   if(dirty){lights();const t0=performance.now();R.render(scene,cam);dirty=false;if(key.castShadow){slow=performance.now()-t0>70?slow+1:0;if(slow>6){key.castShadow=false;R.setPixelRatio(1);size()}}}}
 ctl.addEventListener('change',()=>dirty=true);
 // ---------- chargement
-const byFile={};A.parts.forEach(p=>{(byFile[p[10]]=byFile[p[10]]||[]).push(p)});
+const PIX=new Map(A.parts.map((p,i)=>[p,i]));const byFile={};A.parts.forEach(p=>{(byFile[p[10]]=byFile[p[10]]||[]).push(p)});
 const FILES=Object.keys(A.files),total=FILES.reduce((a,f)=>a+A.files[f],0);let done=0,ready=false;
 function norm(s){return s.replace(/œ/g,'oe').replace(/Œ/g,'Oe').replace(/æ/g,'ae').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()}
 function alias(fr,en,s){let a='';
@@ -403,7 +404,7 @@ function build(file,buf){for(const p of byFile[file]||[]){
   if(p[4]==='lymph'&&!/Tonsil/.test(p[2])){let cx=0,cy=0,cz=0;const n=pos.length/3;for(let i=0;i<pos.length;i+=3){cx+=pos[i];cy+=pos[i+1];cz+=pos[i+2]}cx/=n;cy/=n;cz/=n;for(let i=0;i<pos.length;i+=3){pos[i]=cx+(pos[i]-cx)*2.2;pos[i+1]=cy+(pos[i+1]-cy)*2.2;pos[i+2]=cz+(pos[i+2]-cz)*2.2}}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
   g.setIndex(new THREE.BufferAttribute(new Uint16Array(buf,p[7],p[8]),1));g.computeVertexNormals();g.computeBoundingSphere();
-  const m=new THREE.Mesh(g,mats.skin);m.visible=false;m.userData={id:p[0],fr:p[1],en:p[2],side:p[3],s:p[4],f:p[9],sex:p[11],skin:p[1]==='Peau',shell:!!p[12],key:norm(p[1]+' '+p[2]+alias(p[1],p[2],p[4]))};
+  const m=new THREE.Mesh(g,mats.skin);m.visible=false;m.userData={id:p[0],fr:p[1],en:p[2],side:p[3],s:p[4],f:p[9],c:(A.ci||{})[PIX.get(p)],sex:p[11],skin:p[1]==='Peau',shell:!!p[12],key:norm(p[1]+' '+p[2]+alias(p[1],p[2],p[4]))};
   scene.add(m);meshes.push(m)}
   if(file==='nerv')weld(meshes.filter(m=>m.userData.s==='nerv'&&!NERVE.test(m.userData.en)));
   if(cur){rescope();refresh();counts();fit(true)}}
@@ -427,15 +428,17 @@ function pick(e){const r=cv.getBoundingClientRect();v2.set((e.clientX-r.left)/r.
   if(!h.length)return null;if(mode==='x'&&h.length>1&&!(cur&&cur.opaque)){const tr=x=>x.object.userData.skin||(x.object.userData.shell&&cur&&cur.xray);if(tr(h[0])){const o=h.find(x=>!tr(x));if(o)return o.object}}return h[0].object}
 function label(p){const n=nm(p);return n+(p.side&&!/droite?s?\b|gauches?\b|right|left/i.test(n)?(p.side==='D'?t('sR'):t('sL')):'')}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-let cardMin=false;try{cardMin=localStorage.getItem('corpus3d-card')==='1'}catch(e){}
+let coursOpen=true;let cardMin=false;try{cardMin=localStorage.getItem('corpus3d-card')==='1'}catch(e){}
 function card(){const el=$('#right');if(!sel||mode==='q'){el.hidden=true;return}const p=sel.userData,f=p.f>=0?A.fiches[p.f]:null;
   let h='<div class="chead"><div><h2>'+esc(nm(p))+'</h2><div class="en">'+esc(alt(p))+'</div></div><button type="button" id="bMin" aria-expanded="'+(!cardMin)+'">'+(cardMin?t('showCard'):t('hideCard'))+'</button></div>';
   if(!cardMin){h+='<div class="chips"><span>'+esc(sysLabel(p.s))+'</span>'+(p.side?'<span>'+(p.side==='D'?t('cR'):t('cL'))+'</span>':'')+(S.size>1?'<span class="cnt">'+t('nSel')(S.size)+'</span>':'')+'</div>';
   if(f&&t('frOnly'))h+='<p class="mut">'+t('frOnly')+'</p>';
   if(f&&f.m)h+='<dl lang="fr"><div><dt>'+t('origin')+'</dt><dd>'+esc(f.m[0])+'</dd></div><div><dt>'+t('insertion')+'</dt><dd>'+esc(f.m[1])+'</dd></div><div><dt>'+t('innerv')+'</dt><dd>'+esc(f.m[2])+'</dd></div><div><dt>'+t('action')+'</dt><dd>'+esc(f.m[3])+'</dd></div></dl>';
-  else if(f)h+='<p lang="fr">'+esc(f.t)+'</p>';else h+='<p class="mut">'+t('noCard')+'</p>';
+  else if(f)h+='<p lang="fr">'+esc(f.t)+'</p>';else if(p.c==null)h+='<p class="mut">'+t('noCard')+'</p>';
+  if(p.c!=null&&A.cours){const c=A.cours[p.c];h+='<details class="cours" lang="fr"'+(coursOpen?' open':'')+'><summary>'+t('course')+'<span>'+esc(c.s)+'</span></summary><dl>'+c.p.map(x=>'<div><dt>'+esc(x[0])+'</dt><dd>'+esc(x[1])+'</dd></div>').join('')+'</dl></details>'}
   h+='<div class="row">'+(SEMIO?'<a class="btnlink primary" target="_blank" rel="noopener" href="'+esc(SEMIO+'?ask='+encodeURIComponent(t('semioQ')(nm(p))))+'">'+t('askSemio')+'</a>':'')+'<button type="button" id="bClose">'+t('close')+'</button></div>'}
   el.innerHTML=h;el.hidden=false;el.classList.toggle('min',cardMin);
+  {const dc=el.querySelector('details.cours');if(dc)dc.ontoggle=()=>{coursOpen=dc.open}}
   $('#bMin').onclick=()=>{cardMin=!cardMin;try{localStorage.setItem('corpus3d-card',cardMin?'1':'0')}catch(e){}card()};
   const c=$('#bClose');if(c)c.onclick=()=>select(null)}
 (function(){const el=$('#right'),app=$('#app');let d=null;
