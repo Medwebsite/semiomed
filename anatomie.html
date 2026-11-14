@@ -218,9 +218,12 @@ function look(p){const n=p.fr,s=p.s;
  if(s==='cardio'){const e=p.en;return /atrium|ventricle|papillary|auricle|trabecul|septum|Heart/i.test(e)?mk('#7a2222',.4,'musc'):/leaflet|valve|cusp|chordae/i.test(e)?mk('#dccbb8',.35,'soft'):/pulmonary trunk|pulmonary artery|artery of (right|left) lung/i.test(e)?mk('#2c4a96',.3,'soft'):/vein of (right|left) lung|pulmonary vein/i.test(e)?mk('#b01e27',.28,'soft'):/vein|vena|sinus|venous/i.test(e)?mk('#2c4a96',.3,'soft'):mk('#b01e27',.28,'soft')}
  if(s==='nerv'){const e=p.en;return /nerve|plexus|branch|root|cord of|trunk|division|ganglion|Chorda|ansa|ramus|rami/i.test(e)?mk('#f0c93a',.5,'tube'):/dura|Falx|Tentorium/.test(e)?mk('#d8d1c4',.5,'soft'):/Sclera|Cornea|Lens|Vitreous|eyeball/.test(e)?mk('#f1eee8',.1,'soft'):/Iris/.test(e)?mk('#5b7a8c',.3,'soft'):/sulc/i.test(e)?mk('#8f6259',.55,'soft'):/tract|fascicul|lemnisc|White matter|callosum|Fornix|ommissure|capsule/i.test(e)?mk('#e9e0cf',.45,'soft'):/entricle|Aqueduct|Central canal|chamber/i.test(e)?mk('#7ea6c6',.25,'soft'):/nucle|horn of/i.test(e)?mk('#c29a8a',.45,'soft'):/erebell|vermis|lobule|Tonsil|Lingula|Flocculus|Nodule/.test(e)?mk('#c4968a',.45,'soft'):mk('#c98f85',.45,'soft')}
  if(s==='resp')return /poumon/.test(n)?mk('#c47c86',.55,'soft'):/thyroïde/.test(n)?mk('#c3d0d1',.35,'soft'):mk('#d9ccc0',.4,'soft');
+ if(s==='digest'&&p.id.indexOf('HR')===0)return /Ligament/.test(n)?mk('#e2d9c6',.4,'musc'):/Conduit|Ampoule|Sphincter|Papille/.test(n)?mk('#6f8f3a',.35,'soft'):/foie|Foie/.test(n)?mk('#682820',.28,'soft'):/biliaire/.test(n)?mk('#4d6a38',.3,'soft'):/ancréa/.test(n)?mk('#d6b279',.4,'soft'):/Duodénum|Jéjunum|Iléon/.test(n)?mk('#d19a86',.38,'soft'):mk('#b9836c',.4,'soft');
  if(s==='digest')return /Foie/.test(n)?mk('#682820',.28,'soft'):/biliaire/.test(n)?mk('#4d6a38',.3,'soft'):/ancréa/.test(n)?mk('#d6b279',.4,'soft'):/Gencive/.test(n)?mk('#c35f69',.3,'soft'):mk('#c98c79',.38,'soft');
  if(s==='tegu')return /Cheveux|Sourcils|Poils/.test(n)?mk('#2a1c14',.75,'soft'):/Lèvres/.test(n)?mk('#b56762',.4,'soft'):mk('#d9a98c',.55,'soft');
- if(p.sex==='F')return /Sein/.test(n)?mk('#c08a6c',.62,'soft'):/Ovaire/.test(n)?mk('#d3b08e',.42,'soft'):/Ligament/.test(n)?mk('#cdbfa3',.45,'musc'):/Trompe/.test(n)?mk('#c06a66',.4,'soft'):mk('#a8434b',.4,'soft');
+ if(p.sex==='F'&&/Lobes|lactif|Mamelon|Aréole|aréolaires/.test(n))return /Lobes/.test(n)?mk('#d79a9a',.45,'soft'):/lactif/.test(n)?mk('#efe2c8',.4,'soft'):mk('#8a5846',.5,'soft');
+ if(p.sex==='F')return /Sein/.test(n)?mk('#c08a6c',.62,'soft'):/Ovaire/.test(n)?mk('#d3b08e',.42,'soft'):/Ligament/.test(n)?mk('#cdbfa3',.45,'musc'):/rompe/.test(n)?mk('#c06a66',.4,'soft'):mk('#a8434b',.4,'soft');
+ if(s==='uro'&&p.id.indexOf('HR')===0)return /Cortex/.test(n)?mk('#7a3729',.32,'soft'):/Pyramides/.test(n)?mk('#5a251d',.35,'musc'):/Colonnes/.test(n)?mk('#96503f',.35,'soft'):/Papilles|Hile/.test(n)?mk('#d9c2a4',.4,'soft'):/périphérique/.test(n)?mk('#b98a6e',.4,'soft'):/centrale/.test(n)?mk('#d1a45a',.4,'soft'):/transition/.test(n)?mk('#7fa6c0',.4,'soft'):/Stroma/.test(n)?mk('#a4605a',.4,'musc'):/Conduits|Colliculus|Utricule/.test(n)?mk('#ece2cf',.35,'soft'):/Trigone|Ostium|Col de/.test(n)?mk('#b97a66',.4,'soft'):/Urètre/.test(n)?mk('#d8b39a',.4,'soft'):mk('#c99a83',.4,'soft');
  if(s==='uro')return /Rein/.test(n)?mk('#7a3729',.32,'soft'):mk('#c99a83',.4,'soft');
  if(s==='endo')return /Rate/.test(n)?mk('#54202c',.3,'soft'):/surrénale/.test(n)?mk('#d6a64c',.4,'soft'):mk('#d7a59d',.4,'soft');
  return /Cheveux|Sourcils|Poils/.test(n)?mk('#2a1c14',.75,'soft'):/Lèvres/.test(n)?mk('#b56762',.4,'soft'):mk('#d9a98c',.55,'soft')}
@@ -300,18 +303,23 @@ const nvF=u=>u.s!=='nerv'||NERVE.test(u.en),veF=u=>u.s!=='cardio'||VEIN.test(u.e
   P(r,'re','tronc-respiratoire','Système respiratoire','Avec la cage thoracique','Respiratory system','With the rib cage',['resp','skel'],u=>u.s!=='skel'||RIBS.test(u.fr));
   P(r,'re','tronc-respiratoire-isole','Système respiratoire','Isolé','Respiratory system','Isolated',['resp']);
   P(r,'di','tronc-digestif','Système digestif','Avec le squelette','Digestive system','With the skeleton',['digest','skel']);
+  P(r,'di','tronc-foie','Foie','Segments colorés et voies biliaires','Liver','Coloured segments and biliary tract',['digest'],u=>/foie|Foie|biliaire|Conduit (cystique|hépatique|cholédoque)/.test(u.fr),{color:/Segment|Lobe carré/});
+  P(r,'di','tronc-pancreas','Pancréas','Pancréas, duodénum et voies biliaires','Pancreas','Pancreas, duodenum and biliary tract',['digest'],u=>/ancréa|biliaire|Conduit|Ampoule|Duodénum|Sphincter|Papille duodénale/.test(u.fr));
+  P(r,'di','tronc-intestins','Intestins','Intestin grêle et côlon','Intestines','Small intestine and colon',['digest'],u=>/Duodénum|Jéjunum|Iléon|Cæcum|Côlon|colique|Appendice|Rectum|Valve/.test(u.fr));
   P(r,'di','tronc-digestif-isole','Système digestif','Isolé','Digestive system','Isolated',['digest']);
   P(r,'ug','tronc-urogenital-homme','Système urogénital','Homme','Urogenital system','Male',['uro','skel'],u=>u.s!=='skel'||PELV.test(u.fr),{sex:'M'});
   P(r,'ug','tronc-urogenital-femme','Système urogénital','Femme','Urogenital system','Female',['uro','skel'],u=>u.s!=='skel'||PELV.test(u.fr),{sex:'F'});
-  P(r,'ug','tronc-reins','Reins','Reins, uretères et vessie','Kidneys','Kidneys, ureters and bladder',['uro'],u=>/Rein|Uretère|Vessie/.test(u.fr));
-  P(r,'ug','tronc-seins','Seins','Sur la paroi thoracique','Breasts','On the chest wall',['endo','musc','skel'],u=>u.s==='endo'?/Sein/.test(u.fr):u.s==='musc'?/pectoral/i.test(u.fr):RIBS.test(u.fr),{sex:'F'});
-  P(r,'gl','tronc-glandes','Glandes et rate','','Glands and spleen','',['endo'],u=>!/Sein/.test(u.fr))}
+  P(r,'ug','tronc-reins','Reins','Reins, uretères et vessie','Kidneys','Kidneys, ureters and bladder',['uro'],u=>/Rein|rein|rénal|Uretère|Vessie|vessie|vésical|urétéral|Bassinet/.test(u.fr));
+  P(r,'ug','tronc-rein-interne','Rein','Structure interne (cortex transparent)','Kidney','Internal structure (transparent cortex)',['uro','cardio'],u=>u.s==='uro'?/rein|rénal|Bassinet|Uretère/.test(u.fr):/rénale|rein/i.test(u.fr),{xray:true});
+  P(r,'ug','tronc-prostate','Prostate','Zones, urètre et vésicules séminales','Prostate','Zones, urethra and seminal vesicles',['uro'],u=>/rostat|Urètre|Colliculus|Stroma|séminal|déférent|jaculat|Vessie|vessie|vésical|urétéral/.test(u.fr),{sex:'M'});
+  P(r,'ug','tronc-seins','Seins','Glande, conduits et ligaments','Breasts','Gland, ducts and ligaments',['endo','musc','skel'],u=>u.s==='endo'?u.sex==='F':u.s==='musc'?/pectoral/i.test(u.fr):RIBS.test(u.fr),{sex:'F',xray:true});
+  P(r,'gl','tronc-glandes','Glandes et rate','','Glands and spleen','',['endo'],u=>u.sex!=='F')}
  P(r,'ly',p+'-lymphatique',L,'Système lymphatique',E,'Lymphatic system',['lymph','skel']);
  if(r==='body')P(r,'all','corps-visceres',L,'Viscères et squelette',E,'Viscera and skeleton',['resp','digest','uro','endo','skel']);
  P(r,'all',p+'-tout',L,'Tous les systèmes',E,'All systems',ALLS);
  if(r==='body')P(r,'all','corps-peau',L,'Peau',E,'Skin',ALLS.concat(['tegu']),null,{opaque:true,sexThumb:true});
 });
-const PAL={'tete-encephale':'cerveau cerebral','tronc-coeur':'coeur heart cardiaque','tete-oeil':'oeil yeux orbite','tete-oreille':'oreille osselets','tete-os':'crane skull','tete-crane-colore':'crane skull','tronc-colonne':'rachis vertebres spine','tronc-bassin':'pelvis hanche','tronc-respiratoire':'poumons lungs','tronc-respiratoire-isole':'poumons lungs trachee','tronc-digestif':'estomac foie intestin','tronc-digestif-isole':'estomac foie intestin','tronc-reins':'rein vessie urinaire','corps-os':'squelette skeleton','corps-ligaments':'articulations joints','jambe-ligaments':'genou cheville hanche menisque','bras-ligaments':'epaule coude poignet','corps-muscles':'muscles','corps-peau':'peau skin','tronc-urogenital-femme':'uterus ovaire vagin','tronc-urogenital-homme':'prostate testicule'};
+const PAL={'tete-encephale':'cerveau cerebral','tronc-coeur':'coeur heart cardiaque','tete-oeil':'oeil yeux orbite','tete-oreille':'oreille osselets','tete-os':'crane skull','tete-crane-colore':'crane skull','tronc-colonne':'rachis vertebres spine','tronc-bassin':'pelvis hanche','tronc-respiratoire':'poumons lungs','tronc-respiratoire-isole':'poumons lungs trachee','tronc-digestif':'estomac foie intestin','tronc-digestif-isole':'estomac foie intestin','tronc-reins':'rein vessie urinaire','tronc-rein-interne':'rein reins kidney','tronc-prostate':'prostate','tronc-foie':'foie liver','tronc-pancreas':'pancreas','tronc-intestins':'intestin colon grele','tronc-seins':'sein seins','corps-os':'squelette skeleton','corps-ligaments':'articulations joints','jambe-ligaments':'genou cheville hanche menisque','bras-ligaments':'epaule coude poignet','corps-muscles':'muscles','corps-peau':'peau skin','tronc-urogenital-femme':'uterus ovaire vagin','tronc-urogenital-homme':'prostate testicule'};
 PR.forEach(q=>{q.key=norm([q.fr,q.sfr,q.en,q.sen,PAL[q.id]||''].join(' '))});
 const GORD=['ms','cv','ns','se','re','di','ug','gl','ly','all'];
 let region='body',cur=null;const scope=new Set();
@@ -336,10 +344,13 @@ function route(){const h=location.hash.replace('#','');if(h&&PR.some(p=>p.id===h
 addEventListener('hashchange',route);
 function go(id){if(location.hash==='#'+id)openPreset(id);else location.hash=id}
 // ---------- rendu
-function baseMat(m){const p=m.userData;if(p.skin)return cur&&cur.opaque?mats.skinO:mats.skin;if(cur&&cur.color&&p.s==='skel')return p.cm||(p.cm=mk('hsl('+(meshes.indexOf(m)*47%360)+',62%,52%)',.5,'soft'));return p.look||(p.look=look(p))}
+function baseMat(m){const p=m.userData;if(p.skin)return cur&&cur.opaque?mats.skinO:mats.skin;
+ if(p.shell&&cur&&cur.opaque)return mats.skinO;
+ if(p.shell&&cur&&cur.xray)return p.xm||(p.xm=new THREE.MeshStandardMaterial({color:/Sein/.test(p.fr)?'#c08a6c':'#8a4636',roughness:.6,transparent:true,opacity:/Sein/.test(p.fr)?.45:.3,depthWrite:false,side:THREE.DoubleSide}));
+ if(cur&&cur.color&&(cur.color===true?p.s==='skel':cur.color.test(p.fr)))return p.cm||(p.cm=mk('hsl('+(meshes.indexOf(m)*47%360)+',62%,'+(p.s==='skel'?52:40)+'%)',.5,'soft'));return p.look||(p.look=look(p))}
 function refresh(){const cover=!!(cur&&cur.opaque&&!isolate&&!ghost&&mode==='x'&&sysOn.tegu&&meshes.some(m=>m.userData.skin&&sexOK(m.userData)&&!hidden.has(m)));
  for(const m of meshes){const p=m.userData;
-  m.visible=!!(scope.has(m)&&sexOK(p)&&((isolate?isolate.has(m):(sysOn[p.s]&&!hidden.has(m)&&(!cover||p.s==='tegu'||/Sein/.test(p.fr))&&(cover||!(cur&&cur.opaque)||p.s!=='tegu'||p.skin)))||S.has(m)||(flash&&flash.m===m)));
+  m.visible=!!(scope.has(m)&&sexOK(p)&&((isolate?isolate.has(m):(sysOn[p.s]&&!hidden.has(m)&&(!cover||p.s==='tegu'||/Sein \(|Mamelon|Aréole/.test(p.fr))&&(cover||!(cur&&cur.opaque)||p.s!=='tegu'||p.skin)))||S.has(m)||(flash&&flash.m===m)));
   m.material=flash&&flash.m===m?flash.mat:S.has(m)?mSel:m===hov?mHov:ghost?mGhost:baseMat(m);
   m.renderOrder=m.material.transparent?2:0;m.castShadow=m.receiveShadow=!m.material.transparent}dirty=true;bar()}
 function size(){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();dirty=true}
@@ -368,7 +379,8 @@ function norm(s){return s.replace(/œ/g,'oe').replace(/Œ/g,'Oe').replace(/æ/g,
 function alias(fr,en,s){let a='';
  if(/Incisive|Canine|molaire/.test(fr))a+=' dent dents tooth teeth';
  if(/Jéjunum|Iléon|Duodénum/.test(fr))a+=' intestin grele small intestine';
- if(/Côlon|Rectum|Appendice|Ténia/.test(fr))a+=' gros intestin large intestine';
+ if(/lactif|Mamelon|Aréole|mammaire|sein/.test(fr))a+=' sein seins poitrine breast';if(/rénal|rénales|rein/.test(fr))a+=' rein reins kidney';if(/rostat|Colliculus|Stroma fibro/.test(fr))a+=' prostate';if(/Segment|Lobe carré|Ligament (falciforme|rond du foie|coronaire|triangulaire|veineux)|Hile du foie/.test(fr))a+=' foie liver';if(/Conduit (cystique|hépatique|cholédoque)|Ampoule hépato/.test(fr))a+=' voies biliaires bile';if(/vésical|vessie|urétéral/.test(fr))a+=' vessie bladder';if(/trompe/.test(fr))a+=' trompe uterine fallope';
+ if(/Côlon|Rectum|Appendice|Ténia|Cæcum|colique/.test(fr))a+=' gros intestin large intestine';
  if(s==='cardio'&&/atrium|ventricle|leaflet|papillary|coronary|cardiac|interventricular/i.test(en))a+=' coeur heart cardiaque';
  if(/atrium/i.test(en))a+=' oreillette';
  if(s==='nerv'&&!NERVE.test(en)&&!EYE.test(en)&&!EAR.test(en)&&!/spinal|Cauda|horn of|tract|fascicul|root/i.test(en))a+=' cerveau encephale brain';
@@ -391,7 +403,7 @@ function build(file,buf){for(const p of byFile[file]||[]){
   if(p[4]==='lymph'&&!/Tonsil/.test(p[2])){let cx=0,cy=0,cz=0;const n=pos.length/3;for(let i=0;i<pos.length;i+=3){cx+=pos[i];cy+=pos[i+1];cz+=pos[i+2]}cx/=n;cy/=n;cz/=n;for(let i=0;i<pos.length;i+=3){pos[i]=cx+(pos[i]-cx)*2.2;pos[i+1]=cy+(pos[i+1]-cy)*2.2;pos[i+2]=cz+(pos[i+2]-cz)*2.2}}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
   g.setIndex(new THREE.BufferAttribute(new Uint16Array(buf,p[7],p[8]),1));g.computeVertexNormals();g.computeBoundingSphere();
-  const m=new THREE.Mesh(g,mats.skin);m.visible=false;m.userData={id:p[0],fr:p[1],en:p[2],side:p[3],s:p[4],f:p[9],sex:p[11],skin:p[1]==='Peau',key:norm(p[1]+' '+p[2]+alias(p[1],p[2],p[4]))};
+  const m=new THREE.Mesh(g,mats.skin);m.visible=false;m.userData={id:p[0],fr:p[1],en:p[2],side:p[3],s:p[4],f:p[9],sex:p[11],skin:p[1]==='Peau',shell:!!p[12],key:norm(p[1]+' '+p[2]+alias(p[1],p[2],p[4]))};
   scene.add(m);meshes.push(m)}
   if(file==='nerv')weld(meshes.filter(m=>m.userData.s==='nerv'&&!NERVE.test(m.userData.en)));
   if(cur){rescope();refresh();counts();fit(true)}}
@@ -412,7 +424,7 @@ $('#showAll').onclick=()=>{push();hidden.clear();isolate=null;ghost=false;refres
 const ray=new THREE.Raycaster(),v2=new THREE.Vector2();
 function pick(e){const r=cv.getBoundingClientRect();v2.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(v2,cam);
   const h=ray.intersectObjects(meshes.filter(m=>m.visible&&m.material!==mGhost),false);
-  if(!h.length)return null;if(h[0].object.userData.skin&&h.length>1&&mode==='x'&&!(cur&&cur.opaque)){const o=h.find(x=>!x.object.userData.skin);if(o)return o.object}return h[0].object}
+  if(!h.length)return null;if(mode==='x'&&h.length>1&&!(cur&&cur.opaque)){const tr=x=>x.object.userData.skin||(x.object.userData.shell&&cur&&cur.xray);if(tr(h[0])){const o=h.find(x=>!tr(x));if(o)return o.object}}return h[0].object}
 function label(p){const n=nm(p);return n+(p.side&&!/droite?s?\b|gauches?\b|right|left/i.test(n)?(p.side==='D'?t('sR'):t('sL')):'')}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 let cardMin=false;try{cardMin=localStorage.getItem('corpus3d-card')==='1'}catch(e){}
