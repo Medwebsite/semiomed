@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>body{margin:0}[hidden]{display:none!important}</style>
+<script>window.SEMIO_URL="./";window.ATLAS_MODELS="";window.ATLAS_THUMBS=""</script>
+<title>Corpus 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: scène 3D plein écran ; panneau d'outils à gauche, fiche de la structure à droite ; sur téléphone, tiroirs. */
+:root{
+  --bg:#eef1f4; --stage1:#eef2f5; --stage2:#b9c3cd; --panel:#ffffffee; --line:#cfd7df; --fg:#14202b; --mut:#5a6b7a;
+  --accent:#0b7a8c; --accent-fg:#fff; --ok:#1d8a4e; --bad:#c23b3b; --chip:#e6ecf1; --cardbg:#ffffff;
+  --display:'Space Grotesk',system-ui,sans-serif; --text:'Inter',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1319;--stage1:#1b2630;--stage2:#090d12;--panel:#141c24ee;--line:#2a3743;--fg:#e8eef3;--mut:#93a4b3;--accent:#3fc1d3;--accent-fg:#06222a;--ok:#4cc784;--bad:#ef7070;--chip:#1f2a35;--cardbg:#141c24;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d1319;--stage1:#1b2630;--stage2:#090d12;--panel:#141c24ee;--line:#2a3743;--fg:#e8eef3;--mut:#93a4b3;--accent:#3fc1d3;--accent-fg:#06222a;--ok:#4cc784;--bad:#ef7070;--chip:#1f2a35;--cardbg:#141c24;color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--text);font-size:14px;overflow:hidden}
+#app{height:100%}
+*{box-sizing:border-box}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--chip);border-radius:6px;padding:6px 10px}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button.on,button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+#app{position:relative;height:100%;background:radial-gradient(ellipse at 50% 35%,var(--stage1),var(--stage2))}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.panel{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(8px);display:flex;flex-direction:column;gap:10px;padding:12px}
+#left{top:12px;left:max(16px,env(safe-area-inset-left,0px));width:270px;max-height:calc(100% - 24px);overflow:auto}
+#right{top:12px;right:max(16px,env(safe-area-inset-right,0px));width:330px;max-height:calc(100% - 70px);overflow:auto}
+h1{font-family:var(--display);font-size:20px;margin:0;letter-spacing:-.01em}
+h1 small{display:block;font:400 12px var(--text);color:var(--mut);letter-spacing:0}
+h2{font-family:var(--display);font-size:19px;margin:0;line-height:1.2;text-wrap:balance}
+.lab{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);font-weight:600}
+.tabs{display:flex;gap:6px}.tabs button{flex:1;font-weight:600}
+#q{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+#res{display:flex;flex-direction:column;max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:6px}
+#res button{border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;text-align:left;padding:7px 9px}
+#res button:hover{background:var(--chip)}#res small{color:var(--mut);display:block}
+.layers{display:flex;flex-direction:column;gap:4px}
+.layer{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;border:1px solid transparent;background:none;text-align:left;width:100%}
+.layer i{width:14px;height:14px;border-radius:50%;flex:none;border:2px solid var(--c);background:transparent}
+button.layer.on{background:none;color:var(--fg);border-color:transparent}button.layer:hover{background:var(--chip)}.layer.on i{background:var(--c)}.layer:not(.on){color:var(--mut)}
+.layer span{flex:1}.layer em{font-style:normal;color:var(--mut);font-size:12px;font-variant-numeric:tabular-nums}
+.row{display:flex;flex-wrap:wrap;gap:6px}
+.en{color:var(--mut);font-style:italic}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chips span{background:var(--chip);border-radius:20px;padding:2px 9px;font-size:12px}
+dl{margin:0;display:grid;gap:8px}dt{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600}dd{margin:2px 0 0;line-height:1.45}
+p{margin:0;line-height:1.5}
+.mut{color:var(--mut)}
+#views{position:absolute;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100% - 32px)}
+#credit{position:absolute;pointer-events:none;bottom:calc(4px + env(safe-area-inset-bottom,0px));right:max(16px,env(safe-area-inset-right,0px));font-size:10px;color:var(--mut);max-width:45%;text-align:right}
+#load{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+#load>div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 18px;text-align:center}
+#bar{height:4px;background:var(--chip);border-radius:2px;margin-top:8px;overflow:hidden;width:220px}#bar b{display:block;height:100%;background:var(--accent);width:0}
+#tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);padding:3px 8px;border-radius:4px;font-size:12px;white-space:nowrap}
+#qprompt{font-family:var(--display);font-size:18px;line-height:1.25}
+#qfb{min-height:20px;font-weight:600}.ok{color:var(--ok)}.bad{color:var(--bad)}
+#choices{display:flex;flex-direction:column;gap:6px}#choices button{text-align:left}
+#choices button.good{background:var(--ok);color:#fff;border-color:var(--ok)}#choices button.wrong{background:var(--bad);color:#fff;border-color:var(--bad)}
+#score{font-variant-numeric:tabular-nums}
+#menuBtn{display:none}
+@media (max-width:760px){
+  #menuBtn{display:block;position:absolute;top:10px;left:max(16px,env(safe-area-inset-left,0px));z-index:3}
+  #left{top:52px;width:min(290px,calc(100% - 32px));max-height:calc(100% - 120px);z-index:3}
+  #left.closed{display:none}
+  #right{top:auto;bottom:calc(56px + env(safe-area-inset-bottom,0px));left:max(16px,env(safe-area-inset-left,0px));width:auto;max-height:42%}
+  #credit{display:none}
+}
+.seg{display:flex}.seg button{border-radius:0;margin-left:-1px}.seg button:first-child{border-radius:6px 0 0 6px;margin-left:0}.seg button:last-child{border-radius:0 6px 6px 0}
+#femNote{font-size:12px}
+#tools{position:absolute;top:12px;right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:6px;width:92px;z-index:2}
+#tools button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px;background:var(--panel);backdrop-filter:blur(8px);border-radius:8px}
+#tools button span{font-size:9.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;line-height:1.15;text-align:center}
+#tools button.on{background:var(--accent);color:var(--accent-fg)}
+#tools button:disabled{opacity:.38;cursor:default;border-color:var(--line)}
+#right{right:calc(max(16px,env(safe-area-inset-right,0px)) + 102px)}
+#vpop{top:12px;right:calc(max(16px,env(safe-area-inset-right,0px)) + 102px);width:330px;z-index:4}
+.vhead{display:flex;justify-content:space-between;align-items:center}
+.vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.vgrid button{padding:10px 4px;font-weight:600}
+.chips .cnt{background:var(--accent);color:var(--accent-fg)}
+@media (max-width:760px){#tools{width:50px;gap:4px}#tools button{padding:6px 0}#tools button span{display:none}#tools svg{width:22px;height:22px}
+ #right{right:calc(max(16px,env(safe-area-inset-right,0px)) + 58px);bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+ #vpop{right:calc(max(16px,env(safe-area-inset-right,0px)) + 58px);left:max(16px,env(safe-area-inset-left,0px));width:auto;top:52px}}
+#left>*,#right>*,#vpop>*,#explore>*,#quiz>*{flex-shrink:0}
+#home{height:100%;overflow-y:auto;padding-block:14px 24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px}
+.brand{font:700 22px var(--display);letter-spacing:-.01em}.brand small{display:block;font:400 12px var(--text);color:var(--mut);letter-spacing:0}
+.hs{position:relative;flex:1 1 240px;min-width:0;max-width:460px}
+#hq,#q{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.reslist{display:flex;flex-direction:column;max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+#hres{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:5;box-shadow:0 8px 24px #0003}
+.reslist button{border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;text-align:left;padding:7px 10px}
+.reslist button:hover{background:var(--chip)}.reslist small{color:var(--mut);display:block}.pad{padding:8px 10px}
+.ctl{margin-left:auto}
+.hbody{display:grid;grid-template-columns:168px minmax(0,1fr);gap:22px;align-items:start}
+#regions{position:sticky;top:0;display:flex;flex-direction:column;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px}
+.reg{display:flex;align-items:center;gap:10px;justify-content:flex-start;text-align:left;border-color:transparent;background:none;padding:8px 10px;border-radius:8px;font-weight:600;color:var(--mut)}
+.reg svg{flex:none;fill:var(--line)}
+.reg.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}.reg.on svg{fill:color-mix(in srgb,var(--bg) 35%,transparent)}
+.reg.on.r-body svg *,.reg.on.r-head .fh,.reg.on.r-trunk .ft,.reg.on.r-arm .fa,.reg.on.r-leg .fl{fill:var(--bg)}
+#cat{display:flex;flex-direction:column;gap:22px;min-width:0}
+#cat h2{font-size:17px;margin:0 0 10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}
+.card{display:flex;flex-direction:column;background:var(--cardbg);border:1px solid var(--line);border-radius:12px;overflow:hidden;color:inherit;text-decoration:none;transition:transform .12s,border-color .12s}
+.card:hover,.card:focus-visible{border-color:var(--accent);transform:translateY(-2px);outline:none}
+.card img{display:block;width:100%;height:auto;aspect-ratio:8/9;object-fit:contain;background:radial-gradient(ellipse at 50% 40%,var(--stage1),var(--stage2))}
+.ct{padding:9px 11px 11px;display:flex;flex-direction:column;gap:1px;border-top:1px solid var(--line)}
+.ct b{font:600 12.5px var(--display);letter-spacing:.05em;text-transform:uppercase}.ct small{color:var(--mut);font-size:12px;min-height:1.2em}
+#home #credit{position:static;max-width:none;text-align:left;font-size:11px;color:var(--mut)}
+#home #femNote{font-size:12.5px;margin:0}
+#vbar{position:absolute;top:12px;left:max(16px,env(safe-area-inset-left,0px));display:flex;flex-wrap:wrap;align-items:center;gap:6px;max-width:calc(100% - 140px);z-index:3}
+#vbar button{background:var(--panel);backdrop-filter:blur(8px);font-weight:600}#vbar button.on{background:var(--accent);color:var(--accent-fg)}
+#vtitle{display:flex;flex-direction:column;padding:2px 10px;line-height:1.2}#vtitle b{font:600 15px var(--display)}#vtitle small{color:var(--mut);font-size:12px}
+#sysPop,#searchPop,#quiz{top:58px;left:max(16px,env(safe-area-inset-left,0px));width:290px;max-height:calc(100% - 80px);overflow:auto;z-index:4}
+#left{display:none}
+@media (max-width:760px){.hbody{grid-template-columns:minmax(0,1fr)}#regions{position:static;flex-direction:row;overflow-x:auto}.reg{flex:none}.reg svg{display:none}.ctl{margin-left:0}
+ #vbar{max-width:calc(100% - 82px)}#vtitle{order:9;flex-basis:100%;padding:0 2px}#sysPop,#searchPop,#quiz{top:96px;width:min(290px,calc(100% - 90px))}}
+.reslist .pres{background:var(--chip)}
+.chead{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}.chead>div{min-width:0}.chead button{flex:none;font-size:12px;padding:5px 9px}
+#right.min{gap:0}
+@media (min-width:761px) and (max-width:1150px){#right{top:58px;max-height:calc(100% - 116px)}}
+.chead{cursor:grab;touch-action:none;user-select:none}#right.drag .chead{cursor:grabbing}#right.drag{box-shadow:0 10px 30px #0004}
+#vbar .seg button{border-radius:0}#vbar .seg button:first-child{border-radius:6px 0 0 6px}#vbar .seg button:last-child{border-radius:0 6px 6px 0}#sysPop #femNote{font-size:12px;margin:0}
+.btnlink{display:inline-block;border:1px solid var(--line);background:var(--chip);border-radius:6px;padding:6px 10px;color:inherit;text-decoration:none;font-weight:600}.btnlink:hover{border-color:var(--accent)}.btnlink.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+</style>
+<div id="home">
+  <header class="top">
+    <a id="semioLink" class="btnlink" hidden>← Sémio</a>
+    <div class="brand">Corpus 3D<small data-t="sub"></small></div>
+    <div class="hs"><input id="hq" type="search" autocomplete="off"><div id="hres" class="reslist" hidden></div></div>
+    <div class="row ctl">
+      <div class="seg"><button id="lgFR" type="button" lang="fr" aria-label="Français">FR</button><button id="lgEN" type="button" lang="en" aria-label="English">EN</button></div>
+      <button id="theme" type="button"></button>
+    </div>
+  </header>
+  <div class="hbody">
+    <nav id="regions"></nav>
+    <main id="cat"></main>
+  </div>
+  <footer id="credit" data-t="credit"></footer>
+</div>
+<div id="app" hidden>
+  <canvas id="cv"></canvas>
+  <div id="vbar">
+    <button id="back" type="button">← <span data-t="home"></span></button>
+    <div id="vtitle"><b></b><small></small></div>
+    <button id="bSys" type="button" data-t="systems"></button><button id="bSearch" type="button" data-t="searchBtn"></button><button id="bQuiz" type="button" data-t="quiz"></button>
+    <div class="seg"><button id="sexM" type="button" data-t="male"></button><button id="sexF" type="button" data-t="female"></button></div>
+  </div>
+  <div id="sysPop" class="panel" hidden><p class="mut" id="femNote" hidden data-t="femNote"></p><div class="layers" id="layers"></div><div class="row"><button id="showAll" type="button" data-t="showAll"></button></div></div>
+  <div id="searchPop" class="panel" hidden><input id="q" type="search" autocomplete="off"><div id="res" class="reslist" hidden></div></div>
+  <div id="quiz" class="panel" hidden>
+    <div class="row"><button id="qm1" type="button" class="on" data-t="find"></button><button id="qm2" type="button" data-t="name"></button></div>
+    <p class="mut" id="qhelp"></p>
+    <div id="qprompt"></div>
+    <div id="choices"></div>
+    <div id="qfb"></div>
+    <div class="row"><button id="qnext" type="button" class="primary" data-t="next"></button><button id="qshow" type="button" data-t="showAns"></button></div>
+    <div class="mut"><span data-t="score"></span><b id="score">0 / 0</b>. <span data-t="scoreNote"></span></div>
+  </div>
+  <div id="right" class="panel" hidden></div>
+  <div id="tools" role="toolbar"><button type="button" id="tViews"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span data-t="views"></span></button><button type="button" id="tGhost"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="12" r="5.5"/><circle cx="16" cy="12" r="5.5"/></svg><span data-t="ghost"></span></button><button type="button" id="tCenter"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span data-t="center"></span></button><button type="button" id="tIso"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="currentColor"/><circle cx="12" cy="4" r="1.4"/><circle cx="12" cy="20" r="1.4"/><circle cx="4" cy="12" r="1.4"/><circle cx="20" cy="12" r="1.4"/></svg><span data-t="isolate"></span></button><button type="button" id="tMulti" aria-pressed="false"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="7" r="2.3" fill="currentColor"/><circle cx="16" cy="7" r="2.3" fill="currentColor"/><circle cx="12" cy="13" r="2.3" fill="currentColor"/><circle cx="6" cy="18" r="2.3"/><circle cx="18" cy="18" r="2.3"/></svg><span data-t="multi"></span></button><button type="button" id="tHide"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke-dasharray="3 3.2"/></svg><span data-t="hide"></span></button><button type="button" id="tUndo"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7L4 12l5 5"/><path d="M4 12h10a5 5 0 0 1 0 10h-3"/></svg><span data-t="undo"></span></button><button type="button" id="tReset"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg><span data-t="resetAll"></span></button></div>
+  <div id="vpop" class="panel" hidden>
+    <div class="vhead"><span class="lab" data-t="views"></span><button type="button" id="vClose" data-t="close"></button></div>
+    <div class="vgrid"><button type="button" data-d="vAnt" data-t="vAnt"></button><button type="button" data-d="vPos" data-t="vPos"></button><button type="button" data-d="vR" data-t="vR"></button><button type="button" data-d="vL" data-t="vL"></button><button type="button" data-d="vSup" data-t="vSup"></button><button type="button" data-d="vInf" data-t="vInf"></button></div>
+    <div class="row"><button type="button" id="vCenter" data-t="centerView"></button></div>
+  </div>
+  <div id="tip" hidden></div>
+  <div id="load"><div><b data-t="loading"></b><div id="bar"><b></b></div><span class="mut" id="loadt">0 %</span></div></div>
+</div>
+<script src="three.min.js"></script>
+<script src="orbit.js"></script>
+<script src="data.js"></script>
+<script>
+(function(){
+const A=window.ATLAS,$=s=>document.querySelector(s);
+const SEMIO=window.SEMIO_URL||'',MD=window.ATLAS_MODELS==null?'models/':window.ATLAS_MODELS,TD=window.ATLAS_THUMBS==null?'thumbs/':window.ATLAS_THUMBS;
+const SYS=[['skel','Squelette','#e9e0c8',1,'Skeleton'],['musc','Muscles','#b4473f',1,'Muscles'],['fasc','Tendons et fascias','#cfc8ba',1,'Tendons and fasciae'],['lig','Ligaments et articulations','#9fb6c2',1,'Ligaments and joints'],['cardio','Cœur et vaisseaux','#cf2f3c',1,'Heart and vessels'],['nerv','Système nerveux et sens','#e2c268',1,'Nervous system and senses'],['resp','Appareil respiratoire','#e39aa6',1,'Respiratory system'],['digest','Appareil digestif','#c98a5c',1,'Digestive system'],['uro','Appareil uro-génital','#a47a52',1,'Urogenital system'],['endo','Glandes et rate','#8d6db3',1,'Glands and spleen'],['lymph','Système lymphatique','#7fae5a',1,'Lymphatic system'],['tegu','Peau et téguments','#e2b99c',0,'Skin and hair']];
+const sysOn={};SYS.forEach(s=>{sysOn[s[0]]=!!s[3]});
+const cv=$('#cv'),R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+R.setPixelRatio(Math.min(devicePixelRatio||1,2));
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(35,1,10,20000);
+const ctl=new THREE.OrbitControls(cam,cv);ctl.enableDamping=true;ctl.dampingFactor=.12;ctl.minDistance=40;ctl.maxDistance=6000;
+R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=.92;R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
+(function(){const s=new THREE.Scene();
+ s.add(new THREE.Mesh(new THREE.SphereGeometry(50,32,16),new THREE.ShaderMaterial({side:THREE.BackSide,vertexShader:'varying vec3 p;void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+ fragmentShader:'varying vec3 p;void main(){vec3 d=normalize(p);float t=d.y*.5+.5;vec3 c=mix(vec3(.10,.09,.09),vec3(.62,.66,.72),smoothstep(.15,1.,t));c+=vec3(2.2,2.0,1.8)*smoothstep(.80,.97,dot(d,normalize(vec3(.5,.6,.6))));c+=vec3(.5,.65,.9)*smoothstep(.82,.96,dot(d,normalize(vec3(-.8,.25,-.4))));gl_FragColor=linearToOutputTexel(vec4(c,1.));}'})));
+ const pm=new THREE.PMREMGenerator(R);scene.environment=pm.fromScene(s,.03).texture;pm.dispose()})();
+scene.add(new THREE.HemisphereLight(0xffffff,0x3a3030,.22));
+const key=new THREE.DirectionalLight(0xfff4e6,1.15);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.bias=-.0008;key.shadow.normalBias=1.5;key.shadow.radius=3;scene.add(key);scene.add(key.target);
+const rim=new THREE.DirectionalLight(0xbcd4ff,.35);scene.add(rim);scene.add(rim.target);
+const floor=new THREE.Mesh(new THREE.CircleGeometry(900,48),new THREE.ShadowMaterial({opacity:.22}));floor.rotation.x=-Math.PI/2;floor.position.y=-13;floor.receiveShadow=true;scene.add(floor);
+function lights(){const d=cam.position.distanceTo(ctl.target),o=new THREE.Vector3(.55,.75,.6).applyQuaternion(cam.quaternion).multiplyScalar(2500);
+ key.position.copy(ctl.target).add(o);key.target.position.copy(ctl.target);
+ const h=Math.min(1000,Math.max(140,d*.36)),c=key.shadow.camera;c.left=-h;c.right=h;c.top=h;c.bottom=-h;c.near=500;c.far=5000;c.updateProjectionMatrix();
+ rim.position.copy(ctl.target).add(new THREE.Vector3(-.7,.3,-.8).applyQuaternion(cam.quaternion).multiplyScalar(2000));rim.target.position.copy(ctl.target)}
+const NOISE='float h3(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}float n3(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x),mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x),mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y),f.z);}float fbm(vec3 p){return .5*n3(p)+.3*n3(p*2.1)+.2*n3(p*4.3);}';
+const TEX={musc:'float n_=fbm(vec3(vP.x*.3,vP.y*.02,vP.z*.3));float f_=fbm(vP*.035);diffuseColor.rgb*=mix(.68,1.14,n_);diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.86,.74,.68),smoothstep(.6,.85,f_)*.22);',
+ bone:'float n_=fbm(vP*.4);diffuseColor.rgb*=mix(.84,1.05,n_);diffuseColor.rgb*=mix(vec3(1.),vec3(.97,.9,.78),fbm(vP*.03));',
+ soft:'float n_=fbm(vP*.14);diffuseColor.rgb*=mix(.82,1.08,n_);',tube:'float n_=fbm(vP*.14);diffuseColor.rgb*=mix(.9,1.08,n_);'};
+const mcache={};
+function mk(color,rough,kind){const k=color+rough+kind;if(mcache[k])return mcache[k];const m=new THREE.MeshStandardMaterial({color:color,roughness:rough,metalness:0,envMapIntensity:.85});
+ m.onBeforeCompile=sh=>{sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vP;').replace('#include <begin_vertex>','#include <begin_vertex>\nvP=position;');
+  sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vP;\n'+NOISE).replace('#include <color_fragment>','#include <color_fragment>\n'+TEX[kind])
+   .replace('#include <dithering_fragment>','#include <dithering_fragment>\nfloat fr_=clamp(dot(normalize(normal),normalize(vViewPosition)),0.,1.);gl_FragColor.rgb*=mix('+(kind==='tube'?'.92':'.45')+',1.,pow(fr_,.6));')};
+ m.customProgramCacheKey=()=>kind;return mcache[k]=m}
+const mats={};mats.skinO=mk('#c08a6c',.62,'soft');
+mats.skin=new THREE.MeshStandardMaterial({color:'#d9a98c',roughness:.6,transparent:true,opacity:.4,depthWrite:false,side:THREE.DoubleSide});
+function look(p){const n=p.fr,s=p.s;
+ if(s==='lig')return /menisc|labrum|disc|symphysis|cartilage/i.test(p.en)?mk('#b9c8cc',.35,'soft'):mk('#7fa9c4',.38,'musc');
+ if(p.id.indexOf('ZV')===0)return /Tongue/.test(p.en)?mk('#b5555a',.45,'musc'):/gland/.test(p.en)?mk('#d6b279',.4,'soft'):mk('#c98c79',.4,'soft');
+ if(p.id.indexOf('ZE')===0)return /Thyroid/.test(p.en)?mk('#a3463d',.4,'soft'):mk('#d6a64c',.4,'soft');
+ if(p.id.indexOf('ZR')===0)return mk('#d9ccc0',.4,'soft');
+ if(s==='lymph')return mk('#4f9a2e',.4,'tube');
+ if(s==='skel')return /Incisive|Canine|olaire/.test(n)?mk('#efeadd',.18,'soft'):/Disque/.test(n)?mk('#aebcba',.4,'soft'):/artilage|xipho/i.test(n)?mk('#c3d0d1',.35,'soft'):mk('#d6c8a9',.62,'bone');
+ if(s==='musc')return mk('#7c1e1a',.46,'musc');
+ if(s==='fasc')return mk('#e2d9c6',.33,'musc');
+ if(s==='cardio'){const e=p.en;return /atrium|ventricle|papillary|auricle|trabecul|septum|Heart/i.test(e)?mk('#7a2222',.4,'musc'):/leaflet|valve|cusp|chordae/i.test(e)?mk('#dccbb8',.35,'soft'):/pulmonary trunk|pulmonary artery|artery of (right|left) lung/i.test(e)?mk('#2c4a96',.3,'soft'):/vein of (right|left) lung|pulmonary vein/i.test(e)?mk('#b01e27',.28,'soft'):/vein|vena|sinus|venous/i.test(e)?mk('#2c4a96',.3,'soft'):mk('#b01e27',.28,'soft')}
+ if(s==='nerv'){const e=p.en;return /nerve|plexus|branch|root|cord of|trunk|division|ganglion|Chorda|ansa|ramus|rami/i.test(e)?mk('#f0c93a',.5,'tube'):/dura|Falx|Tentorium/.test(e)?mk('#d8d1c4',.5,'soft'):/Sclera|Cornea|Lens|Vitreous|eyeball/.test(e)?mk('#f1eee8',.1,'soft'):/Iris/.test(e)?mk('#5b7a8c',.3,'soft'):/sulc/i.test(e)?mk('#8f6259',.55,'soft'):/tract|fascicul|lemnisc|White matter|callosum|Fornix|ommissure|capsule/i.test(e)?mk('#e9e0cf',.45,'soft'):/entricle|Aqueduct|Central canal|chamber/i.test(e)?mk('#7ea6c6',.25,'soft'):/nucle|horn of/i.test(e)?mk('#c29a8a',.45,'soft'):/erebell|vermis|lobule|Tonsil|Lingula|Flocculus|Nodule/.test(e)?mk('#c4968a',.45,'soft'):mk('#c98f85',.45,'soft')}
+ if(s==='resp')return /poumon/.test(n)?mk('#c47c86',.55,'soft'):/thyroïde/.test(n)?mk('#c3d0d1',.35,'soft'):mk('#d9ccc0',.4,'soft');
+ if(s==='digest')return /Foie/.test(n)?mk('#682820',.28,'soft'):/biliaire/.test(n)?mk('#4d6a38',.3,'soft'):/ancréa/.test(n)?mk('#d6b279',.4,'soft'):/Gencive/.test(n)?mk('#c35f69',.3,'soft'):mk('#c98c79',.38,'soft');
+ if(s==='tegu')return /Cheveux|Sourcils|Poils/.test(n)?mk('#2a1c14',.75,'soft'):/Lèvres/.test(n)?mk('#b56762',.4,'soft'):mk('#d9a98c',.55,'soft');
+ if(p.sex==='F')return /Sein/.test(n)?mk('#c08a6c',.62,'soft'):/Ovaire/.test(n)?mk('#d3b08e',.42,'soft'):/Ligament/.test(n)?mk('#cdbfa3',.45,'musc'):/Trompe/.test(n)?mk('#c06a66',.4,'soft'):mk('#a8434b',.4,'soft');
+ if(s==='uro')return /Rein/.test(n)?mk('#7a3729',.32,'soft'):mk('#c99a83',.4,'soft');
+ if(s==='endo')return /Rate/.test(n)?mk('#54202c',.3,'soft'):/surrénale/.test(n)?mk('#d6a64c',.4,'soft'):mk('#d7a59d',.4,'soft');
+ return /Cheveux|Sourcils|Poils/.test(n)?mk('#2a1c14',.75,'soft'):/Lèvres/.test(n)?mk('#b56762',.4,'soft'):mk('#d9a98c',.55,'soft')}
+const mSel=new THREE.MeshLambertMaterial({color:'#19c2dc',emissive:'#0a5564'}),mHov=new THREE.MeshLambertMaterial({color:'#8fe3ee'}),
+ mGhost=new THREE.MeshLambertMaterial({color:'#9fb0bf',transparent:true,opacity:.07,depthWrite:false}),
+ mOk=new THREE.MeshLambertMaterial({color:'#2fbf6f',emissive:'#0d4d2a'}),mBad=new THREE.MeshLambertMaterial({color:'#e05252'});
+const meshes=[];let sel=null,hov=null,ghost=false,isolate=null,flash=null,dirty=true,multi=false;
+const S=new Set(),hist=[];
+const hidden=new Set(),root=document.documentElement;
+const ST={lang:'fr',sex:'M'};
+try{const s=JSON.parse(localStorage.getItem('corpus3d')||'{}');if(s.lang==='en'||s.lang==='fr')ST.lang=s.lang;if(s.sex==='F'||s.sex==='M')ST.sex=s.sex;if(s.theme==='dark'||s.theme==='light')root.dataset.theme=s.theme}catch(e){}
+function save(){try{localStorage.setItem('corpus3d',JSON.stringify({lang:ST.lang,sex:ST.sex,theme:root.dataset.theme||''}))}catch(e){}}
+const TX={fr:{sub:"Atlas d'anatomie humaine interactif",male:'Homme',female:'Femme',femNote:"Version femme : utérus, ovaires, trompes, vagin et seins, placés sur le même squelette et les mêmes muscles que la version homme.",
+ explore:'Explorer',quiz:'Quiz',search:'Rechercher : fémur, nerf médian, foie…',systems:'Systèmes',showAll:'Tout réafficher',find:'Trouver',name:'Nommer',
+ help1:'Cliquez sur la structure demandée dans le modèle. Masquez des systèmes si elle est profonde.',help2:'Quelle est la structure surlignée ?',findP:'Trouvez : ',next:'Question suivante',showAns:'Voir la réponse',
+ score:'Score : ',scoreNote:'Les questions portent sur les systèmes affichés.',included:'Systèmes inclus',front:'Face',back:'Dos',right:'Droite',left:'Gauche',whole:'Corps entier',
+ credit:'Modèles 3D : BodyParts3D © DBCLS (CC BY-SA 2.1 JP) · Z-Anatomy (CC BY-SA 4.0) · HuBMAP HRA (CC BY 4.0)',loading:'Chargement du modèle',
+ loadErr:"Le modèle n'a pas pu être chargé.",loadErr2:'Rechargez la page. Si le problème continue, vérifiez que le dossier « models » est bien à côté de la page.',
+ noRes:'Aucune structure trouvée. Essayez un autre terme, en français ou en anglais.',sR:' (droit)',sL:' (gauche)',cR:'Côté droit',cL:'Côté gauche',noCard:'Fiche détaillée à venir pour cette structure.',frOnly:'',
+ origin:'Origine',insertion:'Terminaison',innerv:'Innervation',action:'Action',center:'Centrer',isolate:'Isoler',ghost:'Transparence',hide:'Masquer',close:'Fermer',views:'Vues',multi:'Sélection multiple',undo:'Annuler',resetAll:'Réinitialiser',nSel:n=>n+' structures sélectionnées',vAnt:'ANT',vPos:'POS',vR:'LAT D',vL:'LAT G',vSup:'SUP',vInf:'INF',regions:'Régions',centerView:'Centrer la vue',rHead:'Tête',rCerv:'Colonne cervicale',rThor:'Rachis thoracique',rLumb:'Rachis lombaire',rShoulder:'Épaule',rElbow:'Coude',rHand:'Main',rHip:'Hanche',rKnee:'Genou',rFoot:'Pied',menu:'Menu',light:'Mode clair',dark:'Mode sombre',
+ good:'Bonne réponse.',answer:'Réponse : ',first:'Bonne réponse du premier coup.',after:n=>'Trouvé après '+n+' essais.',thisIs:n=>'Ceci est : '+n+'. Réessayez.',needSys:'Affichez au moins un système pour lancer le quiz.',
+ cv:'Modèle anatomique 3D. Cliquez sur une structure pour afficher sa fiche.'},
+en:{sub:'Interactive human anatomy atlas',male:'Male',female:'Female',femNote:'Female version: uterus, ovaries, uterine tubes, vagina and breasts, placed on the same skeleton and muscles as the male version.',
+ explore:'Explore',quiz:'Quiz',search:'Search: femur, median nerve, liver…',systems:'Systems',showAll:'Show everything',find:'Find',name:'Name',
+ help1:'Click the requested structure on the model. Hide systems if it lies deep.',help2:'Which structure is highlighted?',findP:'Find: ',next:'Next question',showAns:'Show answer',
+ score:'Score: ',scoreNote:'Questions cover the systems currently shown.',included:'Systems included',front:'Front',back:'Back',right:'Right',left:'Left',whole:'Whole body',
+ credit:'3D models: BodyParts3D © DBCLS (CC BY-SA 2.1 JP) · Z-Anatomy (CC BY-SA 4.0) · HuBMAP HRA (CC BY 4.0)',loading:'Loading the model',
+ loadErr:'The model could not be loaded.',loadErr2:'Reload the page. If it keeps failing, check that the “models” folder sits next to the page.',
+ noRes:'No structure found. Try another term, in English or French.',sR:' (right)',sL:' (left)',cR:'Right side',cL:'Left side',noCard:'Detailed card coming soon for this structure.',frOnly:'This card is available in French only for now.',
+ origin:'Origin',insertion:'Insertion',innerv:'Innervation',action:'Action',center:'Center',isolate:'Isolate',ghost:'Transparency',hide:'Hide',close:'Close',views:'Views',multi:'Multi-select',undo:'Undo',resetAll:'Reset',nSel:n=>n+' structures selected',vAnt:'ANT',vPos:'POST',vR:'R LAT',vL:'L LAT',vSup:'SUP',vInf:'INF',regions:'Regions',centerView:'Center view',rHead:'Head',rCerv:'Cervical spine',rThor:'Thoracic spine',rLumb:'Lumbar spine',rShoulder:'Shoulder',rElbow:'Elbow',rHand:'Hand',rHip:'Hip',rKnee:'Knee',rFoot:'Foot',menu:'Menu',light:'Light mode',dark:'Dark mode',
+ good:'Correct.',answer:'Answer: ',first:'Correct on the first try.',after:n=>'Found after '+n+' tries.',thisIs:n=>'This is: '+n+'. Try again.',needSys:'Show at least one system to start the quiz.',
+ cv:'3D anatomical model. Click a structure to open its card.'}};
+const t=k=>TX[ST.lang][k],nm=p=>ST.lang==='fr'?p.fr:p.en,alt=p=>ST.lang==='fr'?p.en:p.fr,sysLabel=s=>SYS.find(x=>x[0]===s)[ST.lang==='fr'?1:4];
+const sexOK=p=>!p.sex||p.sex===ST.sex;
+Object.assign(TX.fr,{home:'Accueil',askSemio:'Demander à Sémio',semioQ:n=>'Explique-moi l\'anatomie de : '+n+' (situation, rapports, vascularisation, innervation et intérêt clinique).',hideCard:'Masquer la fiche',showCard:'Afficher la fiche',model3d:'Modèle 3D complet',searchBtn:'Recherche',hsearch:'Rechercher une structure : fémur, nerf médian, ventricule…',loadingS:'Le modèle se charge encore, réessayez dans un instant.',
+ r_body:'Corps entier',r_head:'Tête et cou',r_trunk:'Tronc',r_arm:'Membre supérieur',r_leg:'Membre inférieur',
+ g_ms:'Système musculosquelettique',g_cv:'Système cardiovasculaire',g_ns:'Système nerveux',g_se:'Organes des sens',g_re:'Système respiratoire',g_di:'Système digestif',g_ug:'Système urogénital',g_gl:'Glandes',g_ly:'Système lymphatique',g_all:'Tous les systèmes',
+ femNote:"Version femme : visage, cheveux, seins et organes génitaux féminins, placés sur le même squelette et les mêmes muscles que la version homme."});
+Object.assign(TX.en,{home:'Home',askSemio:'Ask Sémio',semioQ:n=>'Explain the anatomy of: '+n+' (location, relations, blood supply, innervation and clinical relevance).',hideCard:'Hide card',showCard:'Show card',model3d:'Full 3D model',searchBtn:'Search',hsearch:'Search a structure: femur, median nerve, ventricle…',loadingS:'The model is still loading, try again in a moment.',
+ r_body:'Whole body',r_head:'Head and neck',r_trunk:'Trunk',r_arm:'Upper limb',r_leg:'Lower limb',
+ g_ms:'Musculoskeletal system',g_cv:'Cardiovascular system',g_ns:'Nervous system',g_se:'Sense organs',g_re:'Respiratory system',g_di:'Digestive system',g_ug:'Urogenital system',g_gl:'Glands',g_ly:'Lymphatic system',g_all:'All systems',
+ femNote:'Female version: female face, hair, breasts and genital organs, placed on the same skeleton and muscles as the male version.'});
+// ---------- catalogue
+const ALLS=['skel','lig','musc','fasc','cardio','nerv','resp','digest','uro','endo','lymph'];
+const NERVE=/nerve|plexus|branch|root|cord of|trunk|division|ganglion|Chorda|ansa|ramus|rami/i,VEIN=/vein|vena|sinus|venous/i,CHAMB=/atrium|ventricle|leaflet|papillary/i,
+ HEART=/atrium|ventricle|leaflet|papillary|coronary|cardiac|interventricular|of heart|Aortic arch|Ascending aorta|Pulmonary trunk|Inferior vein of left/i,
+ EYE=/eyeball|Cornea|Lens|Iris|Retina|Sclera|Vitreous|Lacrim|Optic nerve|chamber|Nasolacrimal|Zonular/i,EAR=/Cochlea|Tympanic|Vestibular nerve|Cochlear nerve|Vestibulocochlear|Vestibule|Auditory tube|Semicircular/i,
+ RIBS=/côte|sternum|sternal|xiphoïde|thoracique|costal/i,PELV=/Os coxal|Sacrum|lombale/;
+const RG={body:()=>true,head:(u,c)=>c.y>1425,
+ trunk:(u,c)=>(c.y>745&&c.y<=1500&&Math.abs(c.x)<150)||/Clavicule|Scapula/.test(u.fr),
+ arm:(u,c)=>(c.x<-150&&c.y>640&&c.y<1460)||(u.side==='D'&&/Clavicule|Scapula/.test(u.fr)),
+ leg:(u,c)=>(c.x<-8&&c.x>-200&&(c.y<790||(c.y<905&&c.x<-50&&(u.s==='musc'||u.s==='fasc'||u.s==='lymph'))))||(u.side==='D'&&/Os coxal/.test(u.fr))};
+const PR=[];
+function P(r,g,id,fr,sfr,en,sen,sys,f,o){PR.push(Object.assign({r:r,g:g,id:id,fr:fr,sfr:sfr,en:en,sen:sen,sys:sys,f:f},o||{}))}
+const nvF=u=>u.s!=='nerv'||NERVE.test(u.en),veF=u=>u.s!=='cardio'||VEIN.test(u.en),arF=u=>u.s!=='cardio'||(!VEIN.test(u.en)&&!CHAMB.test(u.en));
+[['body','corps'],['head','tete'],['trunk','tronc'],['arm','bras'],['leg','jambe']].forEach(([r,p])=>{const L=TX.fr['r_'+r],E=TX.en['r_'+r];
+ P(r,'ms',p+'-muscles',L,'Muscles et os',E,'Muscles and bones',['skel','musc','fasc']);
+ P(r,'ms',p+'-os',L,'Os',E,'Bones',['skel']);
+ P(r,'ms',p+'-ligaments',L,'Ligaments et os',E,'Ligaments and bones',['lig','skel']);
+ if(r==='head'){P(r,'ms','tete-crane-colore','Crâne','Os colorés','Skull','Colored bones',['skel'],u=>!/Vertèbre|Atlas|Axis|Disque|hyoïde/.test(u.fr),{color:true});
+  P(r,'ms','tete-mandibule','Mandibule','','Mandible','',['skel'],u=>/Mandibule|inférieure$/.test(u.fr))}
+ if(r==='trunk'){P(r,'ms','tronc-colonne','Colonne vertébrale','','Vertebral column','',['skel'],u=>/Vertèbre|Disque|Atlas|Axis|Sacrum/.test(u.fr),{any:true});
+  P(r,'ms','tronc-bassin','Bassin','Os','Pelvis','Bones',['skel'],u=>/Os coxal|Sacrum/.test(u.fr),{any:true})}
+ if(r==='arm')P(r,'ms','bras-main','Main','Os','Hand','Bones',['skel'],(u,c)=>c.y<815);
+ if(r==='leg')P(r,'ms','jambe-pied','Pied','Os','Foot','Bones',['skel'],(u,c)=>c.y<85);
+ if(r==='trunk')P(r,'cv','tronc-coeur','Cœur','Cavités, valves et vaisseaux coronaires','Heart','Chambers, valves and coronary vessels',['cardio'],u=>HEART.test(u.en));
+ P(r,'cv',p+'-vaisseaux',L,'Artères et veines',E,'Arteries and veins',['cardio','skel']);
+ P(r,'cv',p+'-veines',L,'Veines',E,'Veins',['cardio','skel'],veF);
+ P(r,'cv',p+'-arteres',L,'Artères',E,'Arteries',['cardio','skel'],arF);
+ if(r==='head'){P(r,'ns','tete-encephale','Encéphale','','Brain','',['nerv'],u=>!NERVE.test(u.en)&&!EYE.test(u.en)&&!EAR.test(u.en)&&!/dura|Falx|Tentorium/.test(u.en));
+  P(r,'ns','tete-ventricules','Ventricules','Isolés','Ventricles','Isolated',['nerv'],u=>/entricle|Aqueduct|Choroid|Central canal/.test(u.en))}
+ P(r,'ns',p+'-nerfs',L,'Nerfs',E,'Nerves',['nerv','skel'],nvF);
+ P(r,'ns',p+'-nerfs-muscles',L,'Nerfs et muscles',E,'Nerves and muscles',['nerv','musc','fasc','skel'],nvF);
+ if(r==='head'){P(r,'se','tete-oeil','Œil',"Muscles, nerfs et vaisseaux de l'orbite",'Eye','Muscles, nerves and vessels of the orbit',['nerv','musc','cardio'],(u,c)=>c.x<2&&(u.s==='nerv'?(EYE.test(u.en)||/Oculomotor nerve|Trochlear nerve|Abducens nerve|Ophthalmic nerve/.test(u.en)):u.s==='musc'?u.id.indexOf('ZM')===0:/ophthalmic|ciliary|Central retinal|Lacrimal artery/i.test(u.en)));
+  P(r,'se','tete-oreille','Oreille','Osselets, labyrinthe et nerf vestibulo-cochléaire','Ear','Ossicles, labyrinth and vestibulocochlear nerve',['nerv','skel'],(u,c)=>c.x<2&&(u.s==='nerv'?EAR.test(u.en):/Marteau|Enclume|Étrier/.test(u.fr)))}
+ if(r==='trunk'){
+  P(r,'re','tronc-respiratoire','Système respiratoire','Avec la cage thoracique','Respiratory system','With the rib cage',['resp','skel'],u=>u.s!=='skel'||RIBS.test(u.fr));
+  P(r,'re','tronc-respiratoire-isole','Système respiratoire','Isolé','Respiratory system','Isolated',['resp']);
+  P(r,'di','tronc-digestif','Système digestif','Avec le squelette','Digestive system','With the skeleton',['digest','skel']);
+  P(r,'di','tronc-digestif-isole','Système digestif','Isolé','Digestive system','Isolated',['digest']);
+  P(r,'ug','tronc-urogenital-homme','Système urogénital','Homme','Urogenital system','Male',['uro','skel'],u=>u.s!=='skel'||PELV.test(u.fr),{sex:'M'});
+  P(r,'ug','tronc-urogenital-femme','Système urogénital','Femme','Urogenital system','Female',['uro','skel'],u=>u.s!=='skel'||PELV.test(u.fr),{sex:'F'});
+  P(r,'ug','tronc-reins','Reins','Reins, uretères et vessie','Kidneys','Kidneys, ureters and bladder',['uro'],u=>/Rein|Uretère|Vessie/.test(u.fr));
+  P(r,'ug','tronc-seins','Seins','Sur la paroi thoracique','Breasts','On the chest wall',['endo','musc','skel'],u=>u.s==='endo'?/Sein/.test(u.fr):u.s==='musc'?/pectoral/i.test(u.fr):RIBS.test(u.fr),{sex:'F'});
+  P(r,'gl','tronc-glandes','Glandes et rate','','Glands and spleen','',['endo'],u=>!/Sein/.test(u.fr))}
+ P(r,'ly',p+'-lymphatique',L,'Système lymphatique',E,'Lymphatic system',['lymph','skel']);
+ if(r==='body')P(r,'all','corps-visceres',L,'Viscères et squelette',E,'Viscera and skeleton',['resp','digest','uro','endo','skel']);
+ P(r,'all',p+'-tout',L,'Tous les systèmes',E,'All systems',ALLS);
+ if(r==='body')P(r,'all','corps-peau',L,'Peau',E,'Skin',ALLS.concat(['tegu']),null,{opaque:true,sexThumb:true});
+});
+const PAL={'tete-encephale':'cerveau cerebral','tronc-coeur':'coeur heart cardiaque','tete-oeil':'oeil yeux orbite','tete-oreille':'oreille osselets','tete-os':'crane skull','tete-crane-colore':'crane skull','tronc-colonne':'rachis vertebres spine','tronc-bassin':'pelvis hanche','tronc-respiratoire':'poumons lungs','tronc-respiratoire-isole':'poumons lungs trachee','tronc-digestif':'estomac foie intestin','tronc-digestif-isole':'estomac foie intestin','tronc-reins':'rein vessie urinaire','corps-os':'squelette skeleton','corps-ligaments':'articulations joints','jambe-ligaments':'genou cheville hanche menisque','bras-ligaments':'epaule coude poignet','corps-muscles':'muscles','corps-peau':'peau skin','tronc-urogenital-femme':'uterus ovaire vagin','tronc-urogenital-homme':'prostate testicule'};
+PR.forEach(q=>{q.key=norm([q.fr,q.sfr,q.en,q.sen,PAL[q.id]||''].join(' '))});
+const GORD=['ms','cv','ns','se','re','di','ug','gl','ly','all'];
+let region='body',cur=null;const scope=new Set();
+function inPreset(p,m){const u=m.userData;if(p.sys.indexOf(u.s)<0)return false;if(u.s==='nerv'&&/sulc/i.test(u.en))return false;const c=m.geometry.boundingSphere.center;if(!p.any&&!RG[p.r](u,c))return false;return !p.f||p.f(u,c)}
+function rescope(){scope.clear();if(cur)for(const m of meshes)if(inPreset(cur,m))scope.add(m)}
+const FIG='<svg viewBox="0 0 40 56" width="30" height="42" aria-hidden="true"><circle class="fh" cx="20" cy="7" r="5.5"/><rect class="ft" x="13" y="14" width="14" height="20" rx="3"/><rect class="fa" x="6.5" y="14" width="5" height="22" rx="2.5"/><rect class="fa" x="28.5" y="14" width="5" height="22" rx="2.5"/><rect class="fl" x="13" y="35" width="6.3" height="20" rx="3"/><rect class="fl" x="20.7" y="35" width="6.3" height="20" rx="3"/></svg>';
+function renderHome(){const nav=$('#regions');nav.innerHTML='';Object.keys(RG).forEach(r=>{const b=document.createElement('button');b.type='button';b.className='reg r-'+r+(r===region?' on':'');b.innerHTML=FIG+'<span>'+t('r_'+r)+'</span>';
+  b.onclick=()=>{region=r;renderHome();$('#home').scrollTop=0};nav.appendChild(b)});
+ const cat=$('#cat');cat.innerHTML='';GORD.forEach(g=>{const list=PR.filter(p=>p.r===region&&p.g===g);if(!list.length)return;
+  const sec=document.createElement('section');sec.innerHTML='<h2>'+t('g_'+g)+'</h2>';const grid=document.createElement('div');grid.className='cards';
+  list.forEach(p=>{const a=document.createElement('a');a.className='card';a.href='#'+p.id;const fr=ST.lang==='fr';
+   a.innerHTML='<img src="'+TD+p.id+(p.sexThumb&&ST.sex==='F'?'-f':'')+'.webp" alt="" loading="lazy" width="320" height="360"><span class="ct"><b>'+esc(fr?p.fr:p.en)+'</b><small>'+esc(fr?p.sfr:p.sen)+'</small></span>';grid.appendChild(a)});
+  sec.appendChild(grid);cat.appendChild(sec)})}
+function showHome(){cur=null;$('#app').hidden=true;$('#home').hidden=false;renderHome()}
+function openPreset(id,opt){const p=PR.find(x=>x.id===id);if(!p)return showHome();cur=p;if(p.sex&&p.sex!==ST.sex){ST.sex=p.sex;save()}
+ hist.length=0;hidden.clear();isolate=null;ghost=false;S.clear();sel=null;multi=false;flash=null;mode='x';
+ SYS.forEach(s=>{sysOn[s[0]]=p.sys.indexOf(s[0])>=0});rescope();
+ $('#home').hidden=true;$('#app').hidden=false;$('#quiz').hidden=true;$('#bQuiz').classList.remove('on');$('#tools').hidden=false;closePops();
+ const fr=ST.lang==='fr';$('#vtitle b').textContent=fr?p.fr:p.en;$('#vtitle small').textContent=fr?p.sfr:p.sen;
+ layerUI($('#layers'));syncLayers();counts();size();refresh();card();fit(true)}
+function route(){const h=location.hash.replace('#','');if(h&&PR.some(p=>p.id===h))openPreset(h);else showHome()}
+addEventListener('hashchange',route);
+function go(id){if(location.hash==='#'+id)openPreset(id);else location.hash=id}
+// ---------- rendu
+function baseMat(m){const p=m.userData;if(p.skin)return cur&&cur.opaque?mats.skinO:mats.skin;if(cur&&cur.color&&p.s==='skel')return p.cm||(p.cm=mk('hsl('+(meshes.indexOf(m)*47%360)+',62%,52%)',.5,'soft'));return p.look||(p.look=look(p))}
+function refresh(){const cover=!!(cur&&cur.opaque&&!isolate&&!ghost&&mode==='x'&&sysOn.tegu&&meshes.some(m=>m.userData.skin&&sexOK(m.userData)&&!hidden.has(m)));
+ for(const m of meshes){const p=m.userData;
+  m.visible=!!(scope.has(m)&&sexOK(p)&&((isolate?isolate.has(m):(sysOn[p.s]&&!hidden.has(m)&&(!cover||p.s==='tegu'||/Sein/.test(p.fr))&&(cover||!(cur&&cur.opaque)||p.s!=='tegu'||p.skin)))||S.has(m)||(flash&&flash.m===m)));
+  m.material=flash&&flash.m===m?flash.mat:S.has(m)?mSel:m===hov?mHov:ghost?mGhost:baseMat(m);
+  m.renderOrder=m.material.transparent?2:0;m.castShadow=m.receiveShadow=!m.material.transparent}dirty=true;bar()}
+function size(){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();dirty=true}
+addEventListener('resize',size);
+let anim=null,slow=0;
+function fly(target,dist,d,instant){const dir=cam.position.clone().sub(ctl.target);if(dir.lengthSq()<1)dir.set(0,.08,1);dir.normalize();
+  if(typeof d==='number'){const a=d*Math.PI/180;dir.set(Math.sin(a),.08,Math.cos(a)).normalize()}else if(d)dir.copy(d).normalize();
+  const p1=target.clone().add(dir.multiplyScalar(dist));
+  if(instant){anim=null;cam.position.copy(p1);ctl.target.copy(target);ctl.update();dirty=true;return}
+  anim={t:0,p0:cam.position.clone(),t0:ctl.target.clone(),p1:p1,t1:target.clone()}}
+function sphere(list){const box=new THREE.Box3();for(const m of list){const b=m.geometry.boundingSphere;box.expandByPoint(b.center.clone().addScalar(b.radius));box.expandByPoint(b.center.clone().addScalar(-b.radius))}return box.getBoundingSphere(new THREE.Sphere())}
+function distFor(r){const v=cam.fov*Math.PI/360,hv=Math.atan(Math.tan(v)*cam.aspect);return Math.max(r/Math.sin(v),r/Math.sin(hv))*.92}
+function fit(instant,d){const list=meshes.filter(m=>scope.has(m)&&sexOK(m.userData)&&sysOn[m.userData.s]&&(!m.userData.skin||(cur&&cur.opaque)));if(!list.length)return;
+  const b=new THREE.Box3();list.forEach(m=>{m.geometry.boundingBox||m.geometry.computeBoundingBox();b.union(m.geometry.boundingBox)});const s=b.getBoundingSphere(new THREE.Sphere());
+  fly(s.center,distFor(s.radius),d===undefined?new THREE.Vector3(0,.08,1):d,instant)}
+function focus(list){const b=sphere(list.length?list:[list]);fly(b.center,Math.max(distFor(b.radius)*1.25,110))}
+function loop(){requestAnimationFrame(loop);if($('#app').hidden)return;
+  if(anim){anim.t=Math.min(1,anim.t+.06);const k=1-Math.pow(1-anim.t,3);cam.position.lerpVectors(anim.p0,anim.p1,k);ctl.target.lerpVectors(anim.t0,anim.t1,k);if(anim.t>=1)anim=null;dirty=true}
+  if(ctl.update())dirty=true;
+  if(dirty){lights();const t0=performance.now();R.render(scene,cam);dirty=false;if(key.castShadow){slow=performance.now()-t0>70?slow+1:0;if(slow>6){key.castShadow=false;R.setPixelRatio(1);size()}}}}
+ctl.addEventListener('change',()=>dirty=true);
+// ---------- chargement
+const byFile={};A.parts.forEach(p=>{(byFile[p[10]]=byFile[p[10]]||[]).push(p)});
+const FILES=Object.keys(A.files),total=FILES.reduce((a,f)=>a+A.files[f],0);let done=0,ready=false;
+function norm(s){return s.replace(/œ/g,'oe').replace(/Œ/g,'Oe').replace(/æ/g,'ae').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()}
+function alias(fr,en,s){let a='';
+ if(/Incisive|Canine|molaire/.test(fr))a+=' dent dents tooth teeth';
+ if(/Jéjunum|Iléon|Duodénum/.test(fr))a+=' intestin grele small intestine';
+ if(/Côlon|Rectum|Appendice|Ténia/.test(fr))a+=' gros intestin large intestine';
+ if(s==='cardio'&&/atrium|ventricle|leaflet|papillary|coronary|cardiac|interventricular/i.test(en))a+=' coeur heart cardiaque';
+ if(/atrium/i.test(en))a+=' oreillette';
+ if(s==='nerv'&&!NERVE.test(en)&&!EYE.test(en)&&!EAR.test(en)&&!/spinal|Cauda|horn of|tract|fascicul|root/i.test(en))a+=' cerveau encephale brain';
+ if(s==='nerv'&&/spinal|Cauda|horn of|corticospinal|spinothalamic|Gracile|Cuneate|Central canal/i.test(en))a+=' moelle epiniere spinale spinal cord';
+ if(EYE.test(en)||/rectus muscle|oblique muscle$|Levator palpebrae/.test(en))a+=' oeil yeux eye orbite';
+ if(EAR.test(en)||/Malleus|Incus|Stapes/.test(en))a+=' oreille ear osselet';
+ if(/Vertèbre|Atlas|Axis|Sacrum|Disque interv/.test(fr))a+=' colonne vertebrale rachis spine vertebre';
+ if(s==='skel'&&/Os frontal|pariétal|occipital|temporal|sphénoïde|Ethmoïde|Maxillaire|Mandibule|zygomatique|Os nasal|lacrymal|Vomer|palatin|Cornet/.test(fr))a+=' crane skull';
+ if(/Os coxal|Sacrum/.test(fr))a+=' bassin pelvis hanche';
+ if(/Fémur|Os coxal/.test(fr))a+=' hanche hip';if(/Scapula|Clavicule|Humérus/.test(fr))a+=' epaule shoulder';if(/Talus|Tibia|Fibula|Calcanéus/.test(fr))a+=' cheville ankle';
+ if(/Radius|Ulna|Scaphoïde|Lunatum|Triquétrum|Pisiforme|Capitatum|Hamatum|Trapèze \(os\)|Trapézoïde/.test(fr))a+=' poignet wrist';
+ if(/poumon/.test(fr))a+=' poumons lungs';
+ if(/Tongue/.test(en))a+=' langue';if(/Epiglottis|Cricoid|Arytenoid|thyroïde/.test(en+fr))a+=' larynx';if(/hypophysis/.test(en))a+=' hypophyse pituitaire pituitary';if(/pharynx/i.test(en))a+=' gorge pharynx';if(/menisc/i.test(en))a+=' menisque menisques';if(/cruciate/.test(en))a+=' ligament croise lca lcp';if(/Parotid|Submandibular gland|Sublingual/.test(en))a+=' glande salivaire';
+ if(/Lymphon/.test(fr))a+=' ganglion ganglions lymphatique lymph node';
+ if(/Sein/.test(fr))a+=' mamelle poitrine';if(/Hypophyse|Pituitary/i.test(fr+en))a+=' hypophyse pituitaire';if(/Tonsil/.test(en))a+=' amygdale';
+ return a}
+function build(file,buf){for(const p of byFile[file]||[]){
+  const q=new Uint16Array(buf,p[5],p[6]*3),pos=new Float32Array(q.length),k=A.span/65535;
+  for(let i=0;i<q.length;i+=3){pos[i]=q[i]*k+A.lo[0];pos[i+1]=q[i+1]*k+A.lo[1];pos[i+2]=q[i+2]*k+A.lo[2]}
+  if(p[4]==='lymph'&&!/Tonsil/.test(p[2])){let cx=0,cy=0,cz=0;const n=pos.length/3;for(let i=0;i<pos.length;i+=3){cx+=pos[i];cy+=pos[i+1];cz+=pos[i+2]}cx/=n;cy/=n;cz/=n;for(let i=0;i<pos.length;i+=3){pos[i]=cx+(pos[i]-cx)*2.2;pos[i+1]=cy+(pos[i+1]-cy)*2.2;pos[i+2]=cz+(pos[i+2]-cz)*2.2}}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setIndex(new THREE.BufferAttribute(new Uint16Array(buf,p[7],p[8]),1));g.computeVertexNormals();g.computeBoundingSphere();
+  const m=new THREE.Mesh(g,mats.skin);m.visible=false;m.userData={id:p[0],fr:p[1],en:p[2],side:p[3],s:p[4],f:p[9],sex:p[11],skin:p[1]==='Peau',key:norm(p[1]+' '+p[2]+alias(p[1],p[2],p[4]))};
+  scene.add(m);meshes.push(m)}
+  if(file==='nerv')weld(meshes.filter(m=>m.userData.s==='nerv'&&!NERVE.test(m.userData.en)));
+  if(cur){rescope();refresh();counts();fit(true)}}
+function weld(list){const map=new Map(),K=m=>{const p=m.geometry.attributes.position.array,k=new Array(p.length/3);for(let i=0,j=0;i<p.length;i+=3,j++)k[j]=Math.round(p[i]*6)+','+Math.round(p[i+1]*6)+','+Math.round(p[i+2]*6);return k};
+  const keys=list.map(K);list.forEach((m,x)=>{const n=m.geometry.attributes.normal.array,k=keys[x];for(let j=0;j<k.length;j++){let a=map.get(k[j]);if(!a){a=[0,0,0];map.set(k[j],a)}a[0]+=n[j*3];a[1]+=n[j*3+1];a[2]+=n[j*3+2]}});
+  list.forEach((m,x)=>{const at=m.geometry.attributes.normal,n=at.array,k=keys[x];for(let j=0;j<k.length;j++){const a=map.get(k[j]),l=Math.hypot(a[0],a[1],a[2])||1;n[j*3]=a[0]/l;n[j*3+1]=a[1]/l;n[j*3+2]=a[2]/l}at.needsUpdate=true})}
+function get(n){const ok=r=>{if(!r.ok)throw new Error(r.status);return r.arrayBuffer()};return fetch(MD+n+'.bin').then(ok).catch(()=>fetch(MD+n+'.wasm').then(ok))}
+Promise.all(FILES.map(f=>get(f).then(b=>{build(f,b);done+=b.byteLength;const pc=Math.round(done/total*100);$('#bar b').style.width=pc+'%';$('#loadt').textContent=pc+' %'})))
+ .then(()=>{ready=true;$('#load').hidden=true}).catch(()=>{$('#load>div').innerHTML='<b>'+t('loadErr')+'</b><br><span class="mut">'+t('loadErr2')+'</span>'});
+// ---------- couches
+function layerUI(el){el.innerHTML='';SYS.forEach(s=>{if(cur&&cur.sys.indexOf(s[0])<0)return;const b=document.createElement('button');b.type='button';b.className='layer';b.style.setProperty('--c',s[2]);
+  b.dataset.s=s[0];b.innerHTML='<i></i><span></span><em></em>';
+  b.onclick=()=>{push();sysOn[s[0]]=!sysOn[s[0]];isolate=null;syncLayers();refresh()};el.appendChild(b)})}
+function syncLayers(){document.querySelectorAll('.layer').forEach(b=>{const on=sysOn[b.dataset.s];b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.querySelector('span').textContent=sysLabel(b.dataset.s)})}
+function counts(){const c={};for(const m of scope)if(sexOK(m.userData))c[m.userData.s]=(c[m.userData.s]||0)+1;document.querySelectorAll('.layer').forEach(b=>{b.querySelector('em').textContent=c[b.dataset.s]||''})}
+$('#showAll').onclick=()=>{push();hidden.clear();isolate=null;ghost=false;refresh()};
+// ---------- sélection
+const ray=new THREE.Raycaster(),v2=new THREE.Vector2();
+function pick(e){const r=cv.getBoundingClientRect();v2.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(v2,cam);
+  const h=ray.intersectObjects(meshes.filter(m=>m.visible&&m.material!==mGhost),false);
+  if(!h.length)return null;if(h[0].object.userData.skin&&h.length>1&&mode==='x'&&!(cur&&cur.opaque)){const o=h.find(x=>!x.object.userData.skin);if(o)return o.object}return h[0].object}
+function label(p){const n=nm(p);return n+(p.side&&!/droite?s?\b|gauches?\b|right|left/i.test(n)?(p.side==='D'?t('sR'):t('sL')):'')}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+let cardMin=false;try{cardMin=localStorage.getItem('corpus3d-card')==='1'}catch(e){}
+function card(){const el=$('#right');if(!sel||mode==='q'){el.hidden=true;return}const p=sel.userData,f=p.f>=0?A.fiches[p.f]:null;
+  let h='<div class="chead"><div><h2>'+esc(nm(p))+'</h2><div class="en">'+esc(alt(p))+'</div></div><button type="button" id="bMin" aria-expanded="'+(!cardMin)+'">'+(cardMin?t('showCard'):t('hideCard'))+'</button></div>';
+  if(!cardMin){h+='<div class="chips"><span>'+esc(sysLabel(p.s))+'</span>'+(p.side?'<span>'+(p.side==='D'?t('cR'):t('cL'))+'</span>':'')+(S.size>1?'<span class="cnt">'+t('nSel')(S.size)+'</span>':'')+'</div>';
+  if(f&&t('frOnly'))h+='<p class="mut">'+t('frOnly')+'</p>';
+  if(f&&f.m)h+='<dl lang="fr"><div><dt>'+t('origin')+'</dt><dd>'+esc(f.m[0])+'</dd></div><div><dt>'+t('insertion')+'</dt><dd>'+esc(f.m[1])+'</dd></div><div><dt>'+t('innerv')+'</dt><dd>'+esc(f.m[2])+'</dd></div><div><dt>'+t('action')+'</dt><dd>'+esc(f.m[3])+'</dd></div></dl>';
+  else if(f)h+='<p lang="fr">'+esc(f.t)+'</p>';else h+='<p class="mut">'+t('noCard')+'</p>';
+  h+='<div class="row">'+(SEMIO?'<a class="btnlink primary" target="_blank" rel="noopener" href="'+esc(SEMIO+'?ask='+encodeURIComponent(t('semioQ')(nm(p))))+'">'+t('askSemio')+'</a>':'')+'<button type="button" id="bClose">'+t('close')+'</button></div>'}
+  el.innerHTML=h;el.hidden=false;el.classList.toggle('min',cardMin);
+  $('#bMin').onclick=()=>{cardMin=!cardMin;try{localStorage.setItem('corpus3d-card',cardMin?'1':'0')}catch(e){}card()};
+  const c=$('#bClose');if(c)c.onclick=()=>select(null)}
+(function(){const el=$('#right'),app=$('#app');let d=null;
+ function place(x,y){const r=app.getBoundingClientRect(),w=el.offsetWidth,h=el.offsetHeight;x=Math.max(4,Math.min(r.width-w-4,x));y=Math.max(4,Math.min(r.height-Math.min(h,60)-4,y));
+  el.style.left=x+'px';el.style.top=y+'px';el.style.right='auto';el.style.bottom='auto';el.style.maxHeight='calc(100% - '+(y+8)+'px)'}
+ el.addEventListener('pointerdown',e=>{if(!e.target.closest('.chead')||e.target.closest('button'))return;const r=el.getBoundingClientRect(),a=app.getBoundingClientRect();
+  d={dx:e.clientX-r.left,dy:e.clientY-r.top,ax:a.left,ay:a.top};el.setPointerCapture(e.pointerId);el.classList.add('drag');e.preventDefault()});
+ el.addEventListener('pointermove',e=>{if(d)place(e.clientX-d.ax-d.dx,e.clientY-d.ay-d.dy)});
+ const end=()=>{if(d){d=null;el.classList.remove('drag')}};el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+ window.cardHome=()=>{['left','top','right','bottom','maxHeight'].forEach(k=>el.style[k]='')};
+ addEventListener('resize',()=>{if(el.style.left)place(parseFloat(el.style.left),parseFloat(el.style.top))})})();
+function select(m,opt){
+  if(!m){S.clear();sel=null;ghost=false;isolate=null}
+  else if(multi&&!(opt&&opt.reveal)){if(S.has(m)){S.delete(m);sel=[...S].pop()||null}else{S.add(m);sel=m}}
+  else{S.clear();S.add(m);sel=m;if(opt&&opt.reveal){scope.add(m);ghost=true;isolate=null;sysOn[m.userData.s]=true;syncLayers()}}
+  refresh();card();if(m&&opt&&opt.fly)focus([m])}
+function snap(){return{h:new Set(hidden),i:isolate&&new Set(isolate),g:ghost,s:Object.assign({},sysOn),S:[...S],sel:sel}}
+function push(){hist.push(snap());if(hist.length>40)hist.shift()}
+function undo(){const x=hist.pop();if(!x)return;hidden.clear();x.h.forEach(m=>hidden.add(m));isolate=x.i;ghost=x.g;Object.assign(sysOn,x.s);S.clear();x.S.forEach(m=>S.add(m));sel=x.sel;syncLayers();refresh();card()}
+function resetAll(){if(!cur)return;cardHome();hist.length=0;hidden.clear();isolate=null;ghost=false;S.clear();sel=null;multi=false;SYS.forEach(s=>{sysOn[s[0]]=cur.sys.indexOf(s[0])>=0});rescope();syncLayers();refresh();card();fit(false)}
+function bar(){const n=S.size;$('#tGhost').disabled=!n;$('#tIso').disabled=!n;$('#tHide').disabled=!n;$('#tUndo').disabled=!hist.length;
+  $('#tGhost').classList.toggle('on',ghost);$('#tIso').classList.toggle('on',!!isolate);$('#tMulti').classList.toggle('on',multi);$('#tMulti').setAttribute('aria-pressed',multi)}
+$('#tGhost').onclick=()=>{push();ghost=!ghost;isolate=null;refresh()};
+$('#tIso').onclick=()=>{push();isolate=isolate?null:new Set(S);ghost=false;refresh()};
+$('#tHide').onclick=()=>{push();S.forEach(m=>hidden.add(m));S.clear();sel=null;refresh();card()};
+$('#tCenter').onclick=()=>{if(S.size)focus([...S]);else fit(false,null)};
+$('#tMulti').onclick=()=>{multi=!multi;bar()};
+$('#tUndo').onclick=undo;$('#tReset').onclick=resetAll;
+function closePops(except){['#vpop','#sysPop','#searchPop'].forEach(s=>{if(s!==except)$(s).hidden=true});$('#tViews').classList.toggle('on',!$('#vpop').hidden);$('#bSys').classList.toggle('on',!$('#sysPop').hidden);$('#bSearch').classList.toggle('on',!$('#searchPop').hidden)}
+function pop(s){$(s).hidden=!$(s).hidden;closePops(s)}
+$('#tViews').onclick=()=>pop('#vpop');$('#vClose').onclick=()=>closePops();
+$('#bSys').onclick=()=>pop('#sysPop');$('#bSearch').onclick=()=>{pop('#searchPop');if(!$('#searchPop').hidden)$('#q').focus()};
+$('#back').onclick=()=>{location.hash='home'};
+const DIRS={vAnt:[0,.08,1],vPos:[0,.08,-1],vR:[-1,.08,0],vL:[1,.08,0],vSup:[0,1,.03],vInf:[0,-1,.03]};
+document.querySelectorAll('#vpop [data-d]').forEach(b=>b.onclick=()=>fly(ctl.target.clone(),cam.position.distanceTo(ctl.target),new THREE.Vector3(...DIRS[b.dataset.d])));
+$('#vCenter').onclick=()=>{if(S.size)focus([...S]);else fit(false,null)};
+let down=null;
+cv.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY]});
+cv.addEventListener('pointerup',e=>{if(!down)return;const d=Math.hypot(e.clientX-down[0],e.clientY-down[1]);down=null;if(d>6)return;
+  const m=pick(e);if(mode==='q')return quizClick(m);select(m)});
+let last=0;
+cv.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||e.buttons){tip(null);return}const n=performance.now();if(n-last<70)return;last=n;
+  const m=pick(e);if(m!==hov){hov=m;refresh()}tip(m&&mode!=='q'?m:null,e)});
+cv.addEventListener('pointerleave',()=>{if(hov){hov=null;refresh()}tip(null)});
+function tip(m,e){const el=$('#tip');if(!m){el.hidden=true;return}el.textContent=label(m.userData);el.hidden=false;const r=$('#app').getBoundingClientRect();
+  el.style.left=Math.min(e.clientX-r.left+14,r.width-el.offsetWidth-8)+'px';el.style.top=(e.clientY-r.top+14)+'px'}
+// ---------- recherche
+function results(inp,el,onPick){const q=norm(inp.value.trim());if(q.length<2){el.hidden=true;return}
+  el.innerHTML='';if(!meshes.length){el.innerHTML='<div class="mut pad">'+t('loadingS')+'</div>';el.hidden=false;return}
+  const ws=q.split(/\s+/),ph=PR.filter(x=>ws.every(w=>x.key.includes(w))).slice(0,6),hit=meshes.filter(m=>ws.every(w=>m.userData.key.includes(w))).sort((a,b)=>nm(a.userData).localeCompare(nm(b.userData),ST.lang)||a.userData.side.localeCompare(b.userData.side)).slice(0,50);
+  if(!hit.length&&!ph.length)el.innerHTML='<div class="mut pad">'+t('noRes')+'</div>';
+  ph.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='pres';const fr=ST.lang==='fr';b.innerHTML='<b>'+esc(fr?x.fr:x.en)+'</b>'+((fr?x.sfr:x.sen)?' · '+esc(fr?x.sfr:x.sen):'')+'<small>'+t('model3d')+'</small>';b.onclick=()=>{el.hidden=true;closePops();go(x.id)};el.appendChild(b)});
+  hit.forEach(m=>{const b=document.createElement('button');b.type='button';b.innerHTML=esc(label(m.userData))+'<small>'+esc(alt(m.userData))+' · '+esc(sysLabel(m.userData.s))+'</small>';b.onclick=()=>onPick(m);el.appendChild(b)});el.hidden=false}
+const sw=m=>{if(m.userData.sex&&m.userData.sex!==ST.sex){ST.sex=m.userData.sex;save();applyUI()}};
+const vSearch=()=>results($('#q'),$('#res'),m=>{sw(m);push();select(m,{reveal:true,fly:true});closePops()});
+const hSearch=()=>results($('#hq'),$('#hres'),m=>{$('#hres').hidden=true;sw(m);go('corps-tout');setTimeout(()=>{if(cur)select(m,{reveal:true,fly:true})},60)});
+$('#q').addEventListener('input',vSearch);$('#hq').addEventListener('input',hSearch);
+// ---------- quiz
+let mode='x',qm=1,target=null,tries=0,good=0,asked=0,answered=true;
+function setMode(m){mode=m;$('#bQuiz').classList.toggle('on',m==='q');$('#quiz').hidden=m!=='q';$('#tools').hidden=m==='q';closePops();select(null);flash=null;if(m==='q')next();else refresh()}
+$('#bQuiz').onclick=()=>setMode(mode==='q'?'x':'q');
+$('#qm1').onclick=()=>{qm=1;$('#qm1').classList.add('on');$('#qm2').classList.remove('on');next()};
+$('#qm2').onclick=()=>{qm=2;$('#qm2').classList.add('on');$('#qm1').classList.remove('on');next()};
+function pool(){return meshes.filter(m=>scope.has(m)&&sysOn[m.userData.s]&&sexOK(m.userData)&&!hidden.has(m)&&m.userData.s!=='tegu')}
+function rnd(a){return a[Math.floor(Math.random()*a.length)]}
+function next(){flash=null;sel=null;S.clear();ghost=false;isolate=null;const Pl=pool();$('#qfb').textContent='';$('#qfb').className='';$('#choices').innerHTML='';
+  if(!Pl.length){$('#qprompt').textContent=t('needSys');$('#qhelp').textContent='';target=null;refresh();return}
+  target=rnd(Pl);tries=0;answered=false;
+  if(qm===1){$('#qhelp').textContent=t('help1');$('#qprompt').textContent=t('findP')+label(target.userData);refresh()}
+  else{$('#qhelp').textContent=t('help2');$('#qprompt').textContent='';flash={m:target,mat:mSel};ghost=true;refresh();focus(target);
+    const same=Pl.filter(m=>m.userData.s===target.userData.s&&m.userData.fr!==target.userData.fr),ch=new Map([[target.userData.fr,target]]);
+    let guard=0;while(ch.size<4&&guard++<300){const c=rnd(same.length>=3?same:Pl);ch.set(c.userData.fr,c)}
+    [...ch.values()].sort(()=>Math.random()-.5).forEach(c=>{const b=document.createElement('button');b.type='button';b.textContent=nm(c.userData);b.dataset.k=c.userData.fr;
+      b.onclick=()=>{if(answered)return;answered=true;asked++;const ok=c.userData.fr===target.userData.fr;if(ok)good++;b.classList.add(ok?'good':'wrong');
+        if(!ok)[...$('#choices').children].find(x=>x.dataset.k===target.userData.fr).classList.add('good');fb(ok,ok?t('good'):t('answer')+label(target.userData));score()};
+      $('#choices').appendChild(b)})}}
+function fb(ok,s){const e=$('#qfb');e.textContent=s;e.className=ok?'ok':'bad'}
+function score(){$('#score').textContent=good+' / '+asked}
+function reveal(){if(!target)return;flash={m:target,mat:mOk};ghost=true;refresh();focus(target)}
+function quizClick(m){if(qm!==1||answered||!target||!m)return;
+  if(m.userData.fr===target.userData.fr){answered=true;asked++;if(tries===0)good++;target=m;flash={m:m,mat:mOk};refresh();fb(true,tries?t('after')(tries+1):t('first'));score()}
+  else{tries++;flash={m:m,mat:mBad};refresh();fb(false,t('thisIs')(label(m.userData)));setTimeout(()=>{if(flash&&flash.m===m){flash=null;refresh()}},900)}}
+$('#qnext').onclick=next;$('#qshow').onclick=()=>{if(!target)return;if(!answered){answered=true;asked++;score()}fb(false,t('answer')+label(target.userData));reveal()};
+// ---------- langue, sexe, thème
+function isDark(){return root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches}
+function applyUI(){root.lang=ST.lang;document.querySelectorAll('[data-t]').forEach(e=>{e.textContent=t(e.dataset.t)});document.querySelectorAll('#tools button').forEach(b=>{b.title=b.querySelector('span').textContent});
+  $('#q').placeholder=t('search');$('#hq').placeholder=t('hsearch');cv.setAttribute('aria-label',t('cv'));$('#theme').textContent=isDark()?t('light'):t('dark');
+  $('#lgFR').classList.toggle('on',ST.lang==='fr');$('#lgEN').classList.toggle('on',ST.lang==='en');
+  $('#sexM').classList.toggle('on',ST.sex==='M');$('#sexF').classList.toggle('on',ST.sex==='F');$('#femNote').hidden=ST.sex!=='F';
+  if(cur){const fr=ST.lang==='fr';$('#vtitle b').textContent=fr?cur.fr:cur.en;$('#vtitle small').textContent=fr?cur.sfr:cur.sen;syncLayers();counts();card();if(mode==='q')next()}else renderHome()}
+function setLang(l){ST.lang=l;save();applyUI()}
+function setSex(s){ST.sex=s;save();[...S].forEach(m=>{if(!sexOK(m.userData))S.delete(m)});if(sel&&!S.has(sel))sel=[...S].pop()||null;refresh();applyUI()}
+$('#lgFR').onclick=()=>setLang('fr');$('#lgEN').onclick=()=>setLang('en');$('#sexM').onclick=()=>setSex('M');$('#sexF').onclick=()=>setSex('F');
+$('#theme').onclick=()=>{root.dataset.theme=isDark()?'light':'dark';save();applyUI();dirty=true};
+// ---------- démarrage
+if(SEMIO){const l=$('#semioLink');l.href=SEMIO;l.hidden=false}
+loop();route();applyUI();
+window.__atlas={meshes,select,setMode,setLang,setSex,sysOn,refresh,fly,syncLayers,PR,open:openPreset,scope,isReady:()=>ready,idle:()=>!anim&&!dirty,go};
+})();
+</script>
+
+</html>
