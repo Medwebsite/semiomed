@@ -36,6 +36,7 @@ h2{font-family:var(--display);font-size:19px;margin:0;line-height:1.2;text-wrap:
 #res{display:flex;flex-direction:column;max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:6px}
 #res button{border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;text-align:left;padding:7px 9px}
 #res button:hover{background:var(--chip)}#res small{color:var(--mut);display:block}
+.rrow{display:flex;align-items:stretch;border-bottom:1px solid var(--line)}.rrow>button:first-child{flex:1;min-width:0;border-bottom:0!important}.rrow .radd{flex:none;border:0!important;border-left:1px solid var(--line)!important;color:var(--accent);font-weight:600;font-size:12px;padding:0 10px!important;white-space:nowrap}.rrow .radd:disabled{color:var(--ok);opacity:1}
 .layers{display:flex;flex-direction:column;gap:4px}
 .layer{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;border:1px solid transparent;background:none;text-align:left;width:100%}
 .layer i{width:14px;height:14px;border-radius:50%;flex:none;border:2px solid var(--c);background:transparent}
@@ -96,7 +97,8 @@ p{margin:0;line-height:1.5}
 #regions{position:sticky;top:0;display:flex;flex-direction:column;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px}
 .reg{display:flex;align-items:center;gap:10px;justify-content:flex-start;text-align:left;border-color:transparent;background:none;padding:8px 10px;border-radius:8px;font-weight:600;color:var(--mut)}
 .reg svg{flex:none;fill:var(--line)}
-.reg.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}.reg.on svg{fill:color-mix(in srgb,var(--bg) 35%,transparent)}
+#regions{background:#1b1b1d;border-color:#1b1b1d;padding:10px 8px;gap:4px}.reg{justify-content:space-between;color:#8f8f93;min-height:92px;padding:6px 8px 6px 12px;border-radius:10px}.reg span{flex:1;text-align:right;line-height:1.2}.reg img{flex:none;width:64px;height:80px;object-fit:contain;opacity:.6}.reg:hover{color:#d0d0d4}.reg:hover img{opacity:.85}
+.reg.on{background:#000;color:#fff;border-color:#000}.reg.on img{opacity:1}.reg.on svg{fill:color-mix(in srgb,var(--bg) 35%,transparent)}
 .reg.on.r-body svg *,.reg.on.r-head .fh,.reg.on.r-trunk .ft,.reg.on.r-arm .fa,.reg.on.r-leg .fl{fill:var(--bg)}
 #cat{display:flex;flex-direction:column;gap:22px;min-width:0}
 #cat h2{font-size:17px;margin:0 0 10px}
@@ -113,7 +115,7 @@ p{margin:0;line-height:1.5}
 #vtitle{display:flex;flex-direction:column;padding:2px 10px;line-height:1.2}#vtitle b{font:600 15px var(--display)}#vtitle small{color:var(--mut);font-size:12px}
 #sysPop,#searchPop,#quiz{top:58px;left:max(16px,env(safe-area-inset-left,0px));width:290px;max-height:calc(100% - 80px);overflow:auto;z-index:4}
 #left{display:none}
-@media (max-width:760px){.hbody{grid-template-columns:minmax(0,1fr)}#regions{position:static;flex-direction:row;overflow-x:auto}.reg{flex:none}.reg svg{display:none}.ctl{margin-left:0}
+@media (max-width:760px){.hbody{grid-template-columns:minmax(0,1fr)}#regions{position:static;flex-direction:row;overflow-x:auto}.reg{flex:none;min-height:0;gap:8px}.reg img{width:30px;height:40px}.reg svg{display:none}.ctl{margin-left:0}
  #vbar{max-width:calc(100% - 82px)}#vtitle{order:9;flex-basis:100%;padding:0 2px}#sysPop,#searchPop,#quiz{top:96px;width:min(290px,calc(100% - 90px))}}
 .reslist .pres{background:var(--chip)}
 .cours{border-top:1px solid var(--line,#8884);padding-top:10px}.cours summary{cursor:pointer;font-weight:600;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.cours summary span{font-weight:400;font-size:12px;opacity:.7}.cours dl{margin-top:10px}
@@ -233,7 +235,7 @@ const mSel=new THREE.MeshLambertMaterial({color:'#19c2dc',emissive:'#0a5564'}),m
  mOk=new THREE.MeshLambertMaterial({color:'#2fbf6f',emissive:'#0d4d2a'}),mBad=new THREE.MeshLambertMaterial({color:'#e05252'});
 const meshes=[];let sel=null,hov=null,ghost=false,isolate=null,flash=null,dirty=true,multi=false;
 const S=new Set(),hist=[];
-const hidden=new Set(),root=document.documentElement;
+const hidden=new Set(),added=new Set(),root=document.documentElement;
 const ST={lang:'fr',sex:'M'};
 try{const s=JSON.parse(localStorage.getItem('corpus3d')||'{}');if(s.lang==='en'||s.lang==='fr')ST.lang=s.lang;if(s.sex==='F'||s.sex==='M')ST.sex=s.sex;if(s.theme==='dark'||s.theme==='light')root.dataset.theme=s.theme}catch(e){}
 function save(){try{localStorage.setItem('corpus3d',JSON.stringify({lang:ST.lang,sex:ST.sex,theme:root.dataset.theme||''}))}catch(e){}}
@@ -243,7 +245,7 @@ const TX={fr:{sub:"Atlas d'anatomie humaine interactif",male:'Homme',female:'Fem
  score:'Score : ',scoreNote:'Les questions portent sur les systèmes affichés.',included:'Systèmes inclus',front:'Face',back:'Dos',right:'Droite',left:'Gauche',whole:'Corps entier',
  credit:'Modèles 3D : BodyParts3D © DBCLS (CC BY-SA 2.1 JP) · Z-Anatomy (CC BY-SA 4.0) · HuBMAP HRA (CC BY 4.0)',loading:'Chargement du modèle',
  loadErr:"Le modèle n'a pas pu être chargé.",loadErr2:'Rechargez la page. Si le problème continue, vérifiez que le dossier « models » est bien à côté de la page.',
- noRes:'Aucune structure trouvée. Essayez un autre terme, en français ou en anglais.',sR:' (droit)',sL:' (gauche)',cR:'Côté droit',cL:'Côté gauche',noCard:'Fiche détaillée à venir pour cette structure.',course:'Dans ton cours',frOnly:'',
+ noRes:'Aucune structure trouvée. Essayez un autre terme, en français ou en anglais.',sR:' (droit)',sL:' (gauche)',cR:'Côté droit',cL:'Côté gauche',noCard:'Fiche détaillée à venir pour cette structure.',course:'Dans ton cours',add:'+ Ajouter',added:'Ajouté ✓',frOnly:'',
  origin:'Origine',insertion:'Terminaison',innerv:'Innervation',action:'Action',center:'Centrer',isolate:'Isoler',ghost:'Transparence',hide:'Masquer',close:'Fermer',views:'Vues',multi:'Sélection multiple',undo:'Annuler',resetAll:'Réinitialiser',nSel:n=>n+' structures sélectionnées',vAnt:'ANT',vPos:'POS',vR:'LAT D',vL:'LAT G',vSup:'SUP',vInf:'INF',regions:'Régions',centerView:'Centrer la vue',rHead:'Tête',rCerv:'Colonne cervicale',rThor:'Rachis thoracique',rLumb:'Rachis lombaire',rShoulder:'Épaule',rElbow:'Coude',rHand:'Main',rHip:'Hanche',rKnee:'Genou',rFoot:'Pied',menu:'Menu',light:'Mode clair',dark:'Mode sombre',
  good:'Bonne réponse.',answer:'Réponse : ',first:'Bonne réponse du premier coup.',after:n=>'Trouvé après '+n+' essais.',thisIs:n=>'Ceci est : '+n+'. Réessayez.',needSys:'Affichez au moins un système pour lancer le quiz.',
  cv:'Modèle anatomique 3D. Cliquez sur une structure pour afficher sa fiche.'},
@@ -253,7 +255,7 @@ en:{sub:'Interactive human anatomy atlas',male:'Male',female:'Female',femNote:'F
  score:'Score: ',scoreNote:'Questions cover the systems currently shown.',included:'Systems included',front:'Front',back:'Back',right:'Right',left:'Left',whole:'Whole body',
  credit:'3D models: BodyParts3D © DBCLS (CC BY-SA 2.1 JP) · Z-Anatomy (CC BY-SA 4.0) · HuBMAP HRA (CC BY 4.0)',loading:'Loading the model',
  loadErr:'The model could not be loaded.',loadErr2:'Reload the page. If it keeps failing, check that the “models” folder sits next to the page.',
- noRes:'No structure found. Try another term, in English or French.',sR:' (right)',sL:' (left)',cR:'Right side',cL:'Left side',noCard:'Detailed card coming soon for this structure.',course:'From your course notes',frOnly:'This card is available in French only for now.',
+ noRes:'No structure found. Try another term, in English or French.',sR:' (right)',sL:' (left)',cR:'Right side',cL:'Left side',noCard:'Detailed card coming soon for this structure.',course:'From your course notes',add:'+ Add',added:'Added ✓',frOnly:'This card is available in French only for now.',
  origin:'Origin',insertion:'Insertion',innerv:'Innervation',action:'Action',center:'Center',isolate:'Isolate',ghost:'Transparency',hide:'Hide',close:'Close',views:'Views',multi:'Multi-select',undo:'Undo',resetAll:'Reset',nSel:n=>n+' structures selected',vAnt:'ANT',vPos:'POST',vR:'R LAT',vL:'L LAT',vSup:'SUP',vInf:'INF',regions:'Regions',centerView:'Center view',rHead:'Head',rCerv:'Cervical spine',rThor:'Thoracic spine',rLumb:'Lumbar spine',rShoulder:'Shoulder',rElbow:'Elbow',rHand:'Hand',rHip:'Hip',rKnee:'Knee',rFoot:'Foot',menu:'Menu',light:'Light mode',dark:'Dark mode',
  good:'Correct.',answer:'Answer: ',first:'Correct on the first try.',after:n=>'Found after '+n+' tries.',thisIs:n=>'This is: '+n+'. Try again.',needSys:'Show at least one system to start the quiz.',
  cv:'3D anatomical model. Click a structure to open its card.'}};
@@ -271,7 +273,7 @@ Object.assign(TX.en,{home:'Home',askSemio:'Ask Sémio',semioQ:n=>'Explain the an
 const ALLS=['skel','lig','musc','fasc','cardio','nerv','resp','digest','uro','endo','lymph'];
 const NERVE=/nerve|plexus|branch|root|cord of|trunk|division|ganglion|Chorda|ansa|ramus|rami/i,VEIN=/vein|vena|sinus|venous/i,CHAMB=/atrium|ventricle|leaflet|papillary/i,
  HEART=/atrium|ventricle|leaflet|papillary|coronary|cardiac|interventricular|of heart|Aortic arch|Ascending aorta|Pulmonary trunk|Inferior vein of left/i,
- EYE=/eyeball|Cornea|Lens|Iris|Retina|Sclera|Vitreous|Lacrim|Optic nerve|chamber|Nasolacrimal|Zonular/i,EAR=/Cochlea|Tympanic|Vestibular nerve|Cochlear nerve|Vestibulocochlear|Vestibule|Auditory tube|Semicircular/i,
+ BSTEM=/^Midbrain|^Pons|Medulla oblongata|Pyramid of medulla|Aqueduct of midbrain|colliculus|peduncle|Olive|Fourth ventricle|Tectum|Tegmentum|Substantia nigra|Red nucleus/i,AUR=/^(Hélix|Anthélix|Branches de l'anthélix|Tragus|Antitragus|Lobule de l'auricule|Cavité de la conque|Cymba de la conque|Conque de l'auricule|Incisure antérieure de l'auricule|Apex de l'auricule|Éminence de la conque)$/,EYE=/eyeball|Cornea|Lens|Iris|Retina|Sclera|Vitreous|Lacrim|Optic nerve|chamber|Nasolacrimal|Zonular/i,EAR=/Cochlea|Tympanic|Vestibular nerve|Cochlear nerve|Vestibulocochlear|Vestibule|Auditory tube|Semicircular/i,
  RIBS=/côte|sternum|sternal|xiphoïde|thoracique|costal/i,PELV=/Os coxal|Sacrum|lombale/;
 const RG={body:()=>true,head:(u,c)=>c.y>1425,
  trunk:(u,c)=>(c.y>745&&c.y<=1500&&Math.abs(c.x)<150)||((u.s==='uro'||u.sex)&&c.y>640&&c.y<=1500&&Math.abs(c.x)<150)||/Clavicule|Scapula/.test(u.fr),
@@ -294,12 +296,15 @@ const nvF=u=>u.s!=='nerv'||NERVE.test(u.en),veF=u=>u.s!=='cardio'||VEIN.test(u.e
  P(r,'cv',p+'-vaisseaux',L,'Artères et veines',E,'Arteries and veins',['cardio','skel']);
  P(r,'cv',p+'-veines',L,'Veines',E,'Veins',['cardio','skel'],veF);
  P(r,'cv',p+'-arteres',L,'Artères',E,'Arteries',['cardio','skel'],arF);
- if(r==='head'){P(r,'ns','tete-encephale','Encéphale','','Brain','',['nerv'],u=>!NERVE.test(u.en)&&!EYE.test(u.en)&&!EAR.test(u.en)&&!/dura|Falx|Tentorium/.test(u.en));
+ if(r==='head'){P(r,'ns','tete-encephale','Encéphale','','Brain','',['nerv'],u=>!NERVE.test(u.en)&&!EYE.test(u.en)&&!EAR.test(u.en)&&!/dura|Falx|Tentorium|arachnoid/i.test(u.en));
+  P(r,'ns','tete-meninges','Méninges','Dure-mère, arachnoïde, faux du cerveau et tente du cervelet','Meninges','Dura mater, arachnoid, falx cerebri and tentorium',['nerv'],u=>!NERVE.test(u.en)&&!EYE.test(u.en)&&!EAR.test(u.en),{xray:true});
+  P(r,'ns','tete-tronc-cerebral','Tronc cérébral','Mésencéphale, pont et moelle allongée','Brainstem','Midbrain, pons and medulla oblongata',['nerv'],u=>BSTEM.test(u.en),{color:/./});
   P(r,'ns','tete-ventricules','Ventricules','Isolés','Ventricles','Isolated',['nerv'],u=>/entricle|Aqueduct|Choroid|Central canal/.test(u.en))}
  P(r,'ns',p+'-nerfs',L,'Nerfs',E,'Nerves',['nerv','skel'],nvF);
  P(r,'ns',p+'-nerfs-muscles',L,'Nerfs et muscles',E,'Nerves and muscles',['nerv','musc','fasc','skel'],nvF);
  if(r==='head'){P(r,'se','tete-oeil','Œil',"Muscles, nerfs et vaisseaux de l'orbite",'Eye','Muscles, nerves and vessels of the orbit',['nerv','musc','cardio'],(u,c)=>c.x<2&&(u.s==='nerv'?(EYE.test(u.en)||/Oculomotor nerve|Trochlear nerve|Abducens nerve|Ophthalmic nerve/.test(u.en)):u.s==='musc'?u.id.indexOf('ZM')===0:/ophthalmic|ciliary|Central retinal|Lacrimal artery/i.test(u.en)));
-  P(r,'se','tete-oreille','Oreille','Osselets, labyrinthe et nerf vestibulo-cochléaire','Ear','Ossicles, labyrinth and vestibulocochlear nerve',['nerv','skel'],(u,c)=>c.x<2&&(u.s==='nerv'?EAR.test(u.en):/Marteau|Enclume|Étrier/.test(u.fr)))}
+  P(r,'se','tete-oreille','Oreille','Osselets, labyrinthe et nerf vestibulo-cochléaire','Ear','Ossicles, labyrinth and vestibulocochlear nerve',['nerv','skel','tegu'],(u,c)=>c.x<2&&(u.s==='nerv'?EAR.test(u.en):u.s==='tegu'?AUR.test(u.fr):/Marteau|Enclume|Étrier/.test(u.fr)),{color:AUR});
+  P(r,'se','tete-auricule','Oreille externe','Pavillon : hélix, anthélix, tragus, conque, lobule','External ear','Auricle: helix, antihelix, tragus, concha, lobule',['tegu'],(u,c)=>AUR.test(u.fr),{color:AUR})}
  if(r==='trunk'){
   P(r,'re','tronc-respiratoire','Système respiratoire','Avec la cage thoracique','Respiratory system','With the rib cage',['resp','skel'],u=>u.s!=='skel'||RIBS.test(u.fr));
   P(r,'re','tronc-respiratoire-isole','Système respiratoire','Isolé','Respiratory system','Isolated',['resp']);
@@ -312,6 +317,8 @@ const nvF=u=>u.s!=='nerv'||NERVE.test(u.en),veF=u=>u.s!=='cardio'||VEIN.test(u.e
   P(r,'ug','tronc-urogenital-femme','Système urogénital','Femme','Urogenital system','Female',['uro','skel'],u=>u.s!=='skel'||PELV.test(u.fr),{sex:'F'});
   P(r,'ug','tronc-reins','Reins','Reins, uretères et vessie','Kidneys','Kidneys, ureters and bladder',['uro'],u=>/Rein|rein|rénal|Uretère|Vessie|vessie|vésical|urétéral|Bassinet/.test(u.fr));
   P(r,'ug','tronc-rein-interne','Rein','Structure interne (cortex transparent)','Kidney','Internal structure (transparent cortex)',['uro','cardio'],u=>u.s==='uro'?/rein|rénal|Bassinet|Uretère/.test(u.fr):/rénale|rein/i.test(u.fr),{xray:true});
+  P(r,'ug','tronc-testicule','Testicule','Lobules, rete testis, épididyme et enveloppes','Testis','Lobules, rete testis, epididymis and coverings',['uro'],u=>/Testicule|testicule|Épididyme|Rete testis|Canalicules|vaginale|déférent/.test(u.fr),{sex:'M',xray:true,color:/Lobules|Épididyme|Rete|Canalicules/});
+  P(r,'ns','tronc-moelle','Moelle épinière','Sac dural, moelle, racines et rachis','Spinal cord','Dural sac, cord, roots and spine',['nerv','skel'],u=>u.s==='skel'?/Vertèbre|Sacrum|Atlas|Axis|Coccyx/.test(u.fr):/spinal|Cauda|horn of|Filum|Conus|root/i.test(u.en));
   P(r,'ug','tronc-prostate','Prostate','Zones, urètre et vésicules séminales','Prostate','Zones, urethra and seminal vesicles',['uro'],u=>/rostat|Urètre|Colliculus|Stroma|séminal|déférent|jaculat|Vessie|vessie|vésical|urétéral/.test(u.fr),{sex:'M'});
   P(r,'ug','tronc-seins','Seins','Glande, conduits et ligaments','Breasts','Gland, ducts and ligaments',['endo','musc','skel'],u=>u.s==='endo'?u.sex==='F':u.s==='musc'?/pectoral/i.test(u.fr):RIBS.test(u.fr),{sex:'F',xray:true});
   P(r,'gl','tronc-glandes','Glandes et rate','','Glands and spleen','',['endo'],u=>u.sex!=='F')}
@@ -320,14 +327,14 @@ const nvF=u=>u.s!=='nerv'||NERVE.test(u.en),veF=u=>u.s!=='cardio'||VEIN.test(u.e
  P(r,'all',p+'-tout',L,'Tous les systèmes',E,'All systems',ALLS);
  if(r==='body')P(r,'all','corps-peau',L,'Peau',E,'Skin',ALLS.concat(['tegu']),null,{opaque:true,sexThumb:true});
 });
-const PAL={'tete-encephale':'cerveau cerebral','tronc-coeur':'coeur heart cardiaque','tete-oeil':'oeil yeux orbite','tete-oreille':'oreille osselets','tete-os':'crane skull','tete-crane-colore':'crane skull','tronc-colonne':'rachis vertebres spine','tronc-bassin':'pelvis hanche','tronc-respiratoire':'poumons lungs','tronc-respiratoire-isole':'poumons lungs trachee','tronc-digestif':'estomac foie intestin','tronc-digestif-isole':'estomac foie intestin','tronc-reins':'rein vessie urinaire','tronc-rein-interne':'rein reins kidney','tronc-prostate':'prostate','tronc-foie':'foie liver','tronc-pancreas':'pancreas','tronc-intestins':'intestin colon grele','tronc-seins':'sein seins','corps-os':'squelette skeleton','corps-ligaments':'articulations joints','jambe-ligaments':'genou cheville hanche menisque','bras-ligaments':'epaule coude poignet','corps-muscles':'muscles','corps-peau':'peau skin','tronc-urogenital-femme':'uterus ovaire vagin','tronc-urogenital-homme':'prostate testicule'};
+const PAL={'tete-encephale':'cerveau cerebral','tete-meninges':'meninge dure mere arachnoide pie mere dura','tete-tronc-cerebral':'brainstem bulbe pont mesencephale','tronc-moelle':'moelle spinale spinal cord rachis','tronc-testicule':'testicule testicules bourses scrotum epididyme testis','tete-auricule':'oreille pavillon auricule helix tragus','tronc-coeur':'coeur heart cardiaque','tete-oeil':'oeil yeux orbite','tete-oreille':'oreille osselets','tete-os':'crane skull','tete-crane-colore':'crane skull','tronc-colonne':'rachis vertebres spine','tronc-bassin':'pelvis hanche','tronc-respiratoire':'poumons lungs','tronc-respiratoire-isole':'poumons lungs trachee','tronc-digestif':'estomac foie intestin','tronc-digestif-isole':'estomac foie intestin','tronc-reins':'rein vessie urinaire','tronc-rein-interne':'rein reins kidney','tronc-prostate':'prostate','tronc-foie':'foie liver','tronc-pancreas':'pancreas','tronc-intestins':'intestin colon grele','tronc-seins':'sein seins','corps-os':'squelette skeleton','corps-ligaments':'articulations joints','jambe-ligaments':'genou cheville hanche menisque','bras-ligaments':'epaule coude poignet','corps-muscles':'muscles','corps-peau':'peau skin','tronc-urogenital-femme':'uterus ovaire vagin','tronc-urogenital-homme':'prostate testicule'};
 PR.forEach(q=>{q.key=norm([q.fr,q.sfr,q.en,q.sen,PAL[q.id]||''].join(' '))});
 const GORD=['ms','cv','ns','se','re','di','ug','gl','ly','all'];
 let region='body',cur=null;const scope=new Set();
 function inPreset(p,m){const u=m.userData;if(p.sys.indexOf(u.s)<0)return false;if(u.s==='nerv'&&/sulc/i.test(u.en))return false;const c=m.geometry.boundingSphere.center;if(!p.any&&!RG[p.r](u,c))return false;return !p.f||p.f(u,c)}
 function rescope(){scope.clear();if(cur)for(const m of meshes)if(inPreset(cur,m))scope.add(m)}
 const FIG='<svg viewBox="0 0 40 56" width="30" height="42" aria-hidden="true"><circle class="fh" cx="20" cy="7" r="5.5"/><rect class="ft" x="13" y="14" width="14" height="20" rx="3"/><rect class="fa" x="6.5" y="14" width="5" height="22" rx="2.5"/><rect class="fa" x="28.5" y="14" width="5" height="22" rx="2.5"/><rect class="fl" x="13" y="35" width="6.3" height="20" rx="3"/><rect class="fl" x="20.7" y="35" width="6.3" height="20" rx="3"/></svg>';
-function renderHome(){const nav=$('#regions');nav.innerHTML='';Object.keys(RG).forEach(r=>{const b=document.createElement('button');b.type='button';b.className='reg r-'+r+(r===region?' on':'');b.innerHTML=FIG+'<span>'+t('r_'+r)+'</span>';
+function renderHome(){const nav=$('#regions');nav.innerHTML='';Object.keys(RG).forEach(r=>{const b=document.createElement('button');b.type='button';b.className='reg r-'+r+(r===region?' on':'');b.innerHTML='<span>'+t('r_'+r)+'</span><img src="'+TD+'reg-'+r+'.webp" alt="" loading="lazy">';
   b.onclick=()=>{region=r;renderHome();$('#home').scrollTop=0};nav.appendChild(b)});
  const cat=$('#cat');cat.innerHTML='';GORD.forEach(g=>{const list=PR.filter(p=>p.r===region&&p.g===g);if(!list.length)return;
   const sec=document.createElement('section');sec.innerHTML='<h2>'+t('g_'+g)+'</h2>';const grid=document.createElement('div');grid.className='cards';
@@ -336,7 +343,7 @@ function renderHome(){const nav=$('#regions');nav.innerHTML='';Object.keys(RG).f
   sec.appendChild(grid);cat.appendChild(sec)})}
 function showHome(){cur=null;$('#app').hidden=true;$('#home').hidden=false;renderHome()}
 function openPreset(id,opt){const p=PR.find(x=>x.id===id);if(!p)return showHome();cur=p;if(p.sex&&p.sex!==ST.sex){ST.sex=p.sex;save()}
- hist.length=0;hidden.clear();isolate=null;ghost=false;S.clear();sel=null;multi=false;flash=null;mode='x';
+ hist.length=0;hidden.clear();added.clear();isolate=null;ghost=false;S.clear();sel=null;multi=false;flash=null;mode='x';
  SYS.forEach(s=>{sysOn[s[0]]=p.sys.indexOf(s[0])>=0});rescope();
  $('#home').hidden=true;$('#app').hidden=false;$('#quiz').hidden=true;$('#bQuiz').classList.remove('on');$('#tools').hidden=false;closePops();
  const fr=ST.lang==='fr';$('#vtitle b').textContent=fr?p.fr:p.en;$('#vtitle small').textContent=fr?p.sfr:p.sen;
@@ -347,11 +354,11 @@ function go(id){if(location.hash==='#'+id)openPreset(id);else location.hash=id}
 // ---------- rendu
 function baseMat(m){const p=m.userData;if(p.skin)return cur&&cur.opaque?mats.skinO:mats.skin;
  if(p.shell&&cur&&cur.opaque)return mats.skinO;
- if(p.shell&&cur&&cur.xray)return p.xm||(p.xm=new THREE.MeshStandardMaterial({color:/Sein/.test(p.fr)?'#c08a6c':'#8a4636',roughness:.6,transparent:true,opacity:/Sein/.test(p.fr)?.45:.3,depthWrite:false,side:THREE.DoubleSide}));
+ if(p.shell&&cur&&cur.xray)return p.xm||(p.xm=new THREE.MeshStandardMaterial({color:/Sein/.test(p.fr)?'#c08a6c':/Dure-mère/.test(p.fr)?'#c9ced6':/Arachnoïde/.test(p.fr)?'#f0ddd2':/vaginale/.test(p.fr)?'#e6d3bd':/Testicule/.test(p.fr)?'#d9b3a0':'#8a4636',roughness:.6,transparent:true,opacity:/Sein/.test(p.fr)?.45:/Dure-mère|Arachnoïde/.test(p.fr)?.22:/vaginale/.test(p.fr)?.18:.3,depthWrite:false,side:THREE.DoubleSide}));
  if(cur&&cur.color&&(cur.color===true?p.s==='skel':cur.color.test(p.fr)))return p.cm||(p.cm=mk('hsl('+(meshes.indexOf(m)*47%360)+',62%,'+(p.s==='skel'?52:40)+'%)',.5,'soft'));return p.look||(p.look=look(p))}
 function refresh(){const cover=!!(cur&&cur.opaque&&!isolate&&!ghost&&mode==='x'&&sysOn.tegu&&meshes.some(m=>m.userData.skin&&sexOK(m.userData)&&!hidden.has(m)));
  for(const m of meshes){const p=m.userData;
-  m.visible=!!(scope.has(m)&&sexOK(p)&&((isolate?isolate.has(m):(sysOn[p.s]&&!hidden.has(m)&&(!cover||p.s==='tegu'||/Sein \(|Mamelon|Aréole/.test(p.fr))&&(cover||!(cur&&cur.opaque)||p.s!=='tegu'||p.skin)))||S.has(m)||(flash&&flash.m===m)));
+  m.visible=!!(scope.has(m)&&sexOK(p)&&((added.has(m)&&!hidden.has(m))||(isolate?isolate.has(m):(sysOn[p.s]&&!hidden.has(m)&&(!cover||p.s==='tegu'||/Sein \(|Mamelon|Aréole/.test(p.fr))&&(cover||!(cur&&cur.opaque)||p.s!=='tegu'||p.skin)))||S.has(m)||(flash&&flash.m===m)));
   m.material=flash&&flash.m===m?flash.mat:S.has(m)?mSel:m===hov?mHov:ghost?mGhost:baseMat(m);
   m.renderOrder=m.material.transparent?2:0;m.castShadow=m.receiveShadow=!m.material.transparent}dirty=true;bar()}
 function size(){const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();dirty=true}
@@ -384,6 +391,8 @@ function alias(fr,en,s){let a='';
  if(/Côlon|Rectum|Appendice|Ténia|Cæcum|colique/.test(fr))a+=' gros intestin large intestine';
  if(s==='cardio'&&/atrium|ventricle|leaflet|papillary|coronary|cardiac|interventricular/i.test(en))a+=' coeur heart cardiaque';
  if(/atrium/i.test(en))a+=' oreillette';
+ if(BSTEM.test(en))a+=' tronc cerebral brainstem';if(/Medulla oblongata/i.test(en))a+=' bulbe rachidien moelle allongee';if(/Spinal dura/i.test(en))a+=' moelle epiniere sac dural';
+ if(/dura|arachnoid|Falx|Tentorium/i.test(en))a+=' meninge meninges dure mere';if(AUR.test(fr)||/Oreille externe/.test(fr))a+=' oreille pavillon auricule ear';if(/testicule|Rete testis|Épididyme|Testicule/.test(fr))a+=' testicule bourses testis';
  if(s==='nerv'&&!NERVE.test(en)&&!EYE.test(en)&&!EAR.test(en)&&!/spinal|Cauda|horn of|tract|fascicul|root/i.test(en))a+=' cerveau encephale brain';
  if(s==='nerv'&&/spinal|Cauda|horn of|corticospinal|spinothalamic|Gracile|Cuneate|Central canal/i.test(en))a+=' moelle epiniere spinale spinal cord';
  if(EYE.test(en)||/rectus muscle|oblique muscle$|Levator palpebrae/.test(en))a+=' oeil yeux eye orbite';
@@ -455,10 +464,10 @@ function select(m,opt){
   else if(multi&&!(opt&&opt.reveal)){if(S.has(m)){S.delete(m);sel=[...S].pop()||null}else{S.add(m);sel=m}}
   else{S.clear();S.add(m);sel=m;if(opt&&opt.reveal){scope.add(m);ghost=true;isolate=null;sysOn[m.userData.s]=true;syncLayers()}}
   refresh();card();if(m&&opt&&opt.fly)focus([m])}
-function snap(){return{h:new Set(hidden),i:isolate&&new Set(isolate),g:ghost,s:Object.assign({},sysOn),S:[...S],sel:sel}}
+function snap(){return{a:new Set(added),h:new Set(hidden),i:isolate&&new Set(isolate),g:ghost,s:Object.assign({},sysOn),S:[...S],sel:sel}}
 function push(){hist.push(snap());if(hist.length>40)hist.shift()}
-function undo(){const x=hist.pop();if(!x)return;hidden.clear();x.h.forEach(m=>hidden.add(m));isolate=x.i;ghost=x.g;Object.assign(sysOn,x.s);S.clear();x.S.forEach(m=>S.add(m));sel=x.sel;syncLayers();refresh();card()}
-function resetAll(){if(!cur)return;cardHome();hist.length=0;hidden.clear();isolate=null;ghost=false;S.clear();sel=null;multi=false;SYS.forEach(s=>{sysOn[s[0]]=cur.sys.indexOf(s[0])>=0});rescope();syncLayers();refresh();card();fit(false)}
+function undo(){const x=hist.pop();if(!x)return;hidden.clear();x.h.forEach(m=>hidden.add(m));added.clear();(x.a||[]).forEach(m=>added.add(m));isolate=x.i;ghost=x.g;Object.assign(sysOn,x.s);S.clear();x.S.forEach(m=>S.add(m));sel=x.sel;syncLayers();refresh();card()}
+function resetAll(){if(!cur)return;cardHome();hist.length=0;hidden.clear();added.clear();isolate=null;ghost=false;S.clear();sel=null;multi=false;SYS.forEach(s=>{sysOn[s[0]]=cur.sys.indexOf(s[0])>=0});rescope();syncLayers();refresh();card();fit(false)}
 function bar(){const n=S.size;$('#tGhost').disabled=!n;$('#tIso').disabled=!n;$('#tHide').disabled=!n;$('#tUndo').disabled=!hist.length;
   $('#tGhost').classList.toggle('on',ghost);$('#tIso').classList.toggle('on',!!isolate);$('#tMulti').classList.toggle('on',multi);$('#tMulti').setAttribute('aria-pressed',multi)}
 $('#tGhost').onclick=()=>{push();ghost=!ghost;isolate=null;refresh()};
@@ -486,14 +495,16 @@ cv.addEventListener('pointerleave',()=>{if(hov){hov=null;refresh()}tip(null)});
 function tip(m,e){const el=$('#tip');if(!m){el.hidden=true;return}el.textContent=label(m.userData);el.hidden=false;const r=$('#app').getBoundingClientRect();
   el.style.left=Math.min(e.clientX-r.left+14,r.width-el.offsetWidth-8)+'px';el.style.top=(e.clientY-r.top+14)+'px'}
 // ---------- recherche
-function results(inp,el,onPick){const q=norm(inp.value.trim());if(q.length<2){el.hidden=true;return}
+function results(inp,el,onPick,canAdd){const q=norm(inp.value.trim());if(q.length<2){el.hidden=true;return}
   el.innerHTML='';if(!meshes.length){el.innerHTML='<div class="mut pad">'+t('loadingS')+'</div>';el.hidden=false;return}
   const ws=q.split(/\s+/),ph=PR.filter(x=>ws.every(w=>x.key.includes(w))).slice(0,6),hit=meshes.filter(m=>ws.every(w=>m.userData.key.includes(w))).sort((a,b)=>nm(a.userData).localeCompare(nm(b.userData),ST.lang)||a.userData.side.localeCompare(b.userData.side)).slice(0,50);
   if(!hit.length&&!ph.length)el.innerHTML='<div class="mut pad">'+t('noRes')+'</div>';
-  ph.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='pres';const fr=ST.lang==='fr';b.innerHTML='<b>'+esc(fr?x.fr:x.en)+'</b>'+((fr?x.sfr:x.sen)?' · '+esc(fr?x.sfr:x.sen):'')+'<small>'+t('model3d')+'</small>';b.onclick=()=>{el.hidden=true;closePops();go(x.id)};el.appendChild(b)});
-  hit.forEach(m=>{const b=document.createElement('button');b.type='button';b.innerHTML=esc(label(m.userData))+'<small>'+esc(alt(m.userData))+' · '+esc(sysLabel(m.userData.s))+'</small>';b.onclick=()=>onPick(m);el.appendChild(b)});el.hidden=false}
+  ph.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='pres';const fr=ST.lang==='fr';b.innerHTML='<b>'+esc(fr?x.fr:x.en)+'</b>'+((fr?x.sfr:x.sen)?' · '+esc(fr?x.sfr:x.sen):'')+'<small>'+t('model3d')+'</small>';b.onclick=()=>{el.hidden=true;closePops();go(x.id)};row(el,b,canAdd&&cur&&(()=>meshes.filter(m=>inPreset(x,m)&&sexOK(m.userData))))});
+  hit.forEach(m=>{const b=document.createElement('button');b.type='button';b.innerHTML=esc(label(m.userData))+'<small>'+esc(alt(m.userData))+' · '+esc(sysLabel(m.userData.s))+'</small>';b.onclick=()=>onPick(m);row(el,b,canAdd&&cur&&(()=>[m]))});el.hidden=false}
+function row(el,b,get){if(!get){el.appendChild(b);return}const w=document.createElement('div');w.className='rrow';const a=document.createElement('button');a.type='button';a.className='radd';a.textContent=t('add');a.onclick=e=>{e.stopPropagation();const ms=get();if(ms.length===1)sw(ms[0]);addToScene(ms.filter(m=>sexOK(m.userData)));a.textContent=t('added');a.disabled=true};w.appendChild(b);w.appendChild(a);el.appendChild(w)}
+function addToScene(ms){push();ms.forEach(m=>{scope.add(m);added.add(m);hidden.delete(m)});S.clear();ms.forEach(m=>S.add(m));sel=ms[ms.length-1]||null;ghost=false;refresh();card();if(ms.length)focus(ms)}
 const sw=m=>{if(m.userData.sex&&m.userData.sex!==ST.sex){ST.sex=m.userData.sex;save();applyUI()}};
-const vSearch=()=>results($('#q'),$('#res'),m=>{sw(m);push();select(m,{reveal:true,fly:true});closePops()});
+const vSearch=()=>results($('#q'),$('#res'),m=>{sw(m);push();select(m,{reveal:true,fly:true});closePops()},true);
 const hSearch=()=>results($('#hq'),$('#hres'),m=>{$('#hres').hidden=true;sw(m);go('corps-tout');setTimeout(()=>{if(cur)select(m,{reveal:true,fly:true})},60)});
 $('#q').addEventListener('input',vSearch);$('#hq').addEventListener('input',hSearch);
 // ---------- quiz
