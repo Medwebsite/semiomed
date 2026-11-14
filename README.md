@@ -16,6 +16,7 @@ Sémio est un assistant médical gratuit, en français, en darija et en anglais.
 | **Cours** | Rédaction d'un cours sur un sujet, ou explication page par page de ton propre cours en PDF, avec les points clés et des QCM. |
 | **Mécanisme** | Explication d'une physiopathologie étape par étape. |
 | **Recherche** | Recherche de vrais articles sur PubMed, puis synthèse en français avec les références. |
+| **Anatomie 3D** | Atlas 3D du corps humain (dossier `anatomie/`) : plus de 2 600 structures cliquables, fiches, quiz, et un bouton « Demander à Sémio » sur chaque structure. |
 | **Ma bibliothèque** | Livres en PDF ajoutés par l'utilisateur. Ils restent dans son navigateur et ne sont jamais envoyés. Une bibliothèque commune de manuels libres de droits est aussi disponible. |
 
 ## Les moteurs
@@ -63,3 +64,12 @@ Modèles de base : Gemma 4 (Google), Mistral-7B-Instruct-v0.2 (Mistral AI).
 ## Licence et usage
 
 Projet pédagogique et gratuit. Sémio-2b ne peut pas être utilisé commercialement, à cause de la licence d'une partie de ses données d'entraînement.
+
+## Atlas d'anatomie 3D (dossier `anatomie/`)
+
+Modèles 3D simplifiés et repositionnés à partir de :
+- BodyParts3D, © The Database Center for Life Science, licence CC BY-SA 2.1 Japon ;
+- Z-Anatomy (Gauthier Kervyn, Marcin Zielinski), licence CC BY-SA 4.0 ;
+- HuBMAP Human Reference Atlas, CCF 3D Reference Object Library, licence CC BY 4.0.
+
+Les fichiers du dossier `anatomie/models` restent sous licence CC BY-SA. Rendu : three.js (MIT).
