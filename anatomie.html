@@ -303,7 +303,7 @@ const nvF=u=>u.s!=='nerv'||NERVE.test(u.en),veF=u=>u.s!=='cardio'||VEIN.test(u.e
  P(r,'ns',p+'-nerfs',L,'Nerfs',E,'Nerves',['nerv','skel'],nvF);
  P(r,'ns',p+'-nerfs-muscles',L,'Nerfs et muscles',E,'Nerves and muscles',['nerv','musc','fasc','skel'],nvF);
  if(r==='head'){P(r,'se','tete-oeil','Œil',"Muscles, nerfs et vaisseaux de l'orbite",'Eye','Muscles, nerves and vessels of the orbit',['nerv','musc','cardio'],(u,c)=>c.x<2&&(u.s==='nerv'?(EYE.test(u.en)||/Oculomotor nerve|Trochlear nerve|Abducens nerve|Ophthalmic nerve/.test(u.en)):u.s==='musc'?u.id.indexOf('ZM')===0:/ophthalmic|ciliary|Central retinal|Lacrimal artery/i.test(u.en)));
-  P(r,'se','tete-oreille','Oreille','Osselets, labyrinthe et nerf vestibulo-cochléaire','Ear','Ossicles, labyrinth and vestibulocochlear nerve',['nerv','skel','tegu'],(u,c)=>c.x<2&&(u.s==='nerv'?EAR.test(u.en):u.s==='tegu'?AUR.test(u.fr):/Marteau|Enclume|Étrier/.test(u.fr)),{color:AUR});
+  P(r,'se','tete-oreille','Oreille','Osselets, labyrinthe et nerf vestibulo-cochléaire','Ear','Ossicles, labyrinth and vestibulocochlear nerve',['nerv','skel','tegu'],(u,c)=>c.x<2&&(u.s==='nerv'?EAR.test(u.en):u.s==='tegu'?AUR.test(u.fr):/Marteau|Enclume|Étrier/.test(u.fr)),{color:new RegExp(AUR.source+'|Cochlée|Vestibule|Marteau|Enclume|Étrier')});
   P(r,'se','tete-auricule','Oreille externe','Pavillon : hélix, anthélix, tragus, conque, lobule','External ear','Auricle: helix, antihelix, tragus, concha, lobule',['tegu'],(u,c)=>AUR.test(u.fr),{color:AUR})}
  if(r==='trunk'){
   P(r,'re','tronc-respiratoire','Système respiratoire','Avec la cage thoracique','Respiratory system','With the rib cage',['resp','skel'],u=>u.s!=='skel'||RIBS.test(u.fr));
@@ -390,7 +390,7 @@ function alias(fr,en,s){let a='';
  if(/lactif|Mamelon|Aréole|mammaire|sein/.test(fr))a+=' sein seins poitrine breast';if(/rénal|rénales|rein/.test(fr))a+=' rein reins kidney';if(/rostat|Colliculus|Stroma fibro/.test(fr))a+=' prostate';if(/Segment|Lobe carré|Ligament (falciforme|rond du foie|coronaire|triangulaire|veineux)|Hile du foie/.test(fr))a+=' foie liver';if(/Conduit (cystique|hépatique|cholédoque)|Ampoule hépato/.test(fr))a+=' voies biliaires bile';if(/vésical|vessie|urétéral/.test(fr))a+=' vessie bladder';if(/trompe/.test(fr))a+=' trompe uterine fallope';
  if(/Côlon|Rectum|Appendice|Ténia|Cæcum|colique/.test(fr))a+=' gros intestin large intestine';
  if(s==='cardio'&&/atrium|ventricle|leaflet|papillary|coronary|cardiac|interventricular/i.test(en))a+=' coeur heart cardiaque';
- if(/atrium/i.test(en))a+=' oreillette';
+ if(/atrium/i.test(en))a+=' oreillette';if(/^Vestibule/.test(fr))a+=' canal canaux semi circulaires labyrinthe utricule saccule';
  if(BSTEM.test(en))a+=' tronc cerebral brainstem';if(/Medulla oblongata/i.test(en))a+=' bulbe rachidien moelle allongee';if(/Spinal dura/i.test(en))a+=' moelle epiniere sac dural';
  if(/dura|arachnoid|Falx|Tentorium/i.test(en))a+=' meninge meninges dure mere';if(AUR.test(fr)||/Oreille externe/.test(fr))a+=' oreille pavillon auricule ear';if(/testicule|Rete testis|Épididyme|Testicule/.test(fr))a+=' testicule bourses testis';
  if(s==='nerv'&&!NERVE.test(en)&&!EYE.test(en)&&!EAR.test(en)&&!/spinal|Cauda|horn of|tract|fascicul|root/i.test(en))a+=' cerveau encephale brain';
