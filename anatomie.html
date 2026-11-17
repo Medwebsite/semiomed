@@ -81,7 +81,7 @@ p{margin:0;line-height:1.5}
 .chips .cnt{background:var(--accent);color:var(--accent-fg)}
 @media (max-width:760px){#tools{width:50px;gap:4px}#tools button{padding:6px 0}#tools button span{display:none}#tools svg{width:22px;height:22px}
  #right{right:calc(max(16px,env(safe-area-inset-right,0px)) + 58px);bottom:calc(12px + env(safe-area-inset-bottom,0px))}
- #vpop{right:calc(max(16px,env(safe-area-inset-right,0px)) + 58px);left:max(16px,env(safe-area-inset-left,0px));width:auto;top:52px}}
+ #vpop{right:calc(max(16px,env(safe-area-inset-right,0px)) + 58px);left:max(16px,env(safe-area-inset-left,0px));width:auto;top:128px}}
 #left>*,#right>*,#vpop>*,#explore>*,#quiz>*{flex-shrink:0}
 #home{height:100%;overflow-y:auto;padding-block:14px 24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px}
 .top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px}
@@ -116,9 +116,9 @@ p{margin:0;line-height:1.5}
 #sysPop,#searchPop,#quiz{top:58px;left:max(16px,env(safe-area-inset-left,0px));width:290px;max-height:calc(100% - 80px);overflow:auto;z-index:4}
 #left{display:none}
 @media (max-width:760px){.hbody{grid-template-columns:minmax(0,1fr)}#regions{position:static;flex-direction:row;overflow-x:auto}.reg{flex:none;min-height:0;gap:8px}.reg img{width:30px;height:40px}.reg svg{display:none}.ctl{margin-left:0}
- #vbar{max-width:calc(100% - 82px)}#vtitle{order:9;flex-basis:100%;padding:0 2px}#sysPop,#searchPop,#quiz{top:96px;width:min(290px,calc(100% - 90px))}}
+ #vbar{max-width:calc(100% - 82px)}#vtitle{order:9;flex-basis:100%;padding:0 2px}#sysPop,#searchPop,#quiz{top:128px;max-height:calc(100% - 140px);width:min(290px,calc(100% - 90px))}}
 .reslist .pres{background:var(--chip)}
-.cours{border-top:1px solid var(--line,#8884);padding-top:10px}.cours summary{cursor:pointer;font-weight:600;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.cours summary span{font-weight:400;font-size:12px;opacity:.7}.cours dl{margin-top:10px}
+.cours{border-top:1px solid var(--line,#8884);padding-top:10px}.cours summary{cursor:pointer;font-weight:600;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.cours summary span{font-weight:400;font-size:12px;opacity:.7}.cours dl{margin-top:10px}.cours h3{margin:14px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
 .chead{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}.chead>div{min-width:0}.chead button{flex:none;font-size:12px;padding:5px 9px}
 #right.min{gap:0}
 @media (min-width:761px) and (max-width:1150px){#right{top:58px;max-height:calc(100% - 116px)}}
@@ -209,7 +209,10 @@ function mk(color,rough,kind){const k=color+rough+kind;if(mcache[k])return mcach
  m.customProgramCacheKey=()=>kind;return mcache[k]=m}
 const mats={};mats.skinO=mk('#c08a6c',.62,'soft');
 mats.skin=new THREE.MeshStandardMaterial({color:'#d9a98c',roughness:.6,transparent:true,opacity:.4,depthWrite:false,side:THREE.DoubleSide});
-function look(p){const n=p.fr,s=p.s;
+const MCOL={'Pie-mère':'#c0504a','Arachnoïde crânienne':'#8c7bb8','Dure-mère crânienne':'#5b7aa6','Albuginée':'#d8d2c4','Tunique vaginale (lame viscérale)':'#5fa8d8','Tunique vaginale (lame pariétale)':'#2f64b0','Fascia spermatique interne':'#c9b84a','Muscle crémaster et fascia crémastérique':'#b0302a','Fascia spermatique externe':'#d0882a','Dartos':'#9a4fa8','Scrotum (peau)':'#8a5a40','Plèvre viscérale':'#4f9fd0','Plèvre pariétale':'#2b4f8c','Épicarde (lame viscérale du péricarde séreux)':'#e2a07c','Péricarde séreux (lame pariétale)':'#e6c84f','Péricarde fibreux':'#5d6f93','Capsule fibreuse du rein':'#b9a3d6','Graisse périrénale':'#f0cf5a','Fascia rénal (de Gerota)':'#7fb08a'};
+const MEMB=new RegExp('^('+Object.keys(MCOL).map(k=>k.replace(/[()]/g,'\\$&')).join('|')+')$');
+function hid(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h%997}
+function look(p){const n=p.fr,s=p.s;if(/^M[AB]\d/.test(p.id)&&MCOL[n])return mk(MCOL[n],.55,'soft');
  if(s==='lig')return /menisc|labrum|disc|symphysis|cartilage/i.test(p.en)?mk('#b9c8cc',.35,'soft'):mk('#7fa9c4',.38,'musc');
  if(p.id.indexOf('ZV')===0)return /Tongue/.test(p.en)?mk('#b5555a',.45,'musc'):/gland/.test(p.en)?mk('#d6b279',.4,'soft'):mk('#c98c79',.4,'soft');
  if(p.id.indexOf('ZE')===0)return /Thyroid/.test(p.en)?mk('#a3463d',.4,'soft'):mk('#d6a64c',.4,'soft');
@@ -273,12 +276,12 @@ Object.assign(TX.en,{home:'Home',askSemio:'Ask Sémio',semioQ:n=>'Explain the an
 const ALLS=['skel','lig','musc','fasc','cardio','nerv','resp','digest','uro','endo','lymph'];
 const NERVE=/nerve|plexus|branch|root|cord of|trunk|division|ganglion|Chorda|ansa|ramus|rami/i,VEIN=/vein|vena|sinus|venous/i,CHAMB=/atrium|ventricle|leaflet|papillary/i,
  HEART=/atrium|ventricle|leaflet|papillary|coronary|cardiac|interventricular|of heart|Aortic arch|Ascending aorta|Pulmonary trunk|Inferior vein of left/i,
- BSTEM=/^Midbrain|^Pons|Medulla oblongata|Pyramid of medulla|Aqueduct of midbrain|colliculus|peduncle|Olive|Fourth ventricle|Tectum|Tegmentum|Substantia nigra|Red nucleus/i,AUR=/^(Hélix|Anthélix|Branches de l'anthélix|Tragus|Antitragus|Lobule de l'auricule|Cavité de la conque|Cymba de la conque|Conque de l'auricule|Incisure antérieure de l'auricule|Apex de l'auricule|Éminence de la conque)$/,EYE=/eyeball|Cornea|Lens|Iris|Retina|Sclera|Vitreous|Lacrim|Optic nerve|chamber|Nasolacrimal|Zonular/i,EAR=/Cochlea|Tympanic|Vestibular nerve|Cochlear nerve|Vestibulocochlear|Vestibule|Auditory tube|Semicircular/i,
+ BSTEM=/^Midbrain|^Pons|Medulla oblongata|Pyramid of medulla|Aqueduct of midbrain|(Superior|Inferior) colliculus|cerebral peduncle|cerebellar peduncle|Olive|Fourth ventricle|Tectum|Tegmentum|Substantia nigra|Red nucleus/i,AUR=/^(Hélix|Anthélix|Branches de l'anthélix|Tragus|Antitragus|Lobule de l'auricule|Cavité de la conque|Cymba de la conque|Conque de l'auricule|Incisure antérieure de l'auricule|Apex de l'auricule|Éminence de la conque)$/,EYE=/eyeball|Cornea|Lens|Iris|Retina|Sclera|Vitreous|Lacrim|Optic nerve|chamber|Nasolacrimal|Zonular/i,EAR=/Cochlea|Tympanic|Vestibular nerve|Cochlear nerve|Vestibulocochlear|Vestibule|Auditory tube|Semicircular/i,
  RIBS=/côte|sternum|sternal|xiphoïde|thoracique|costal/i,PELV=/Os coxal|Sacrum|lombale/;
 const RG={body:()=>true,head:(u,c)=>c.y>1425,
  trunk:(u,c)=>(c.y>745&&c.y<=1500&&Math.abs(c.x)<150)||((u.s==='uro'||u.sx)&&c.y>640&&c.y<=1500&&Math.abs(c.x)<150)||/Clavicule|Scapula/.test(u.fr),
- arm:(u,c)=>(c.x<-150&&c.y>640&&c.y<1460)||(u.side==='D'&&/Clavicule|Scapula/.test(u.fr)),
- leg:(u,c)=>(u.s!=='uro'&&!(u.sx&&c.y>640)&&c.x<-8&&c.x>-200&&(c.y<790||(c.y<905&&c.x<-50&&(u.s==='musc'||u.s==='fasc'||u.s==='lymph'))))||(u.side==='D'&&/Os coxal/.test(u.fr))};
+ arm:(u,c)=>(c.x<-150&&c.y>640&&c.y<1460)||(u.side==='D'&&/Clavicule|Scapula|Deltoïde|Supra-épineux|Infra-épineux|Petit rond|Grand rond|Subscapulaire/.test(u.fr))||(u.s==='lymph'&&c.x<-125&&c.y>640&&c.y<1460),
+ leg:(u,c)=>(u.s==='lymph'&&c.x<0&&/inguinal/i.test(u.en))||(u.s!=='uro'&&!/Pubo-rectal/.test(u.fr)&&!(u.sx&&c.y>640)&&c.x<-8&&c.x>-200&&(c.y<790||(c.y<905&&c.x<-50&&(u.s==='musc'||u.s==='fasc'||u.s==='lymph'))))||(u.side==='D'&&/Os coxal/.test(u.fr))};
 const PR=[];
 function P(r,g,id,fr,sfr,en,sen,sys,f,o){PR.push(Object.assign({r:r,g:g,id:id,fr:fr,sfr:sfr,en:en,sen:sen,sys:sys,f:f},o||{}))}
 const nvF=u=>u.s!=='nerv'||NERVE.test(u.en),veF=u=>u.s!=='cardio'||VEIN.test(u.en),arF=u=>u.s!=='cardio'||(!VEIN.test(u.en)&&!CHAMB.test(u.en));
@@ -297,41 +300,44 @@ const nvF=u=>u.s!=='nerv'||NERVE.test(u.en),veF=u=>u.s!=='cardio'||VEIN.test(u.e
  P(r,'cv',p+'-veines',L,'Veines',E,'Veins',['cardio','skel'],veF);
  P(r,'cv',p+'-arteres',L,'Artères',E,'Arteries',['cardio','skel'],arF);
  if(r==='head'){P(r,'ns','tete-encephale','Encéphale','','Brain','',['nerv'],u=>!NERVE.test(u.en)&&!EYE.test(u.en)&&!EAR.test(u.en)&&!/dura|Falx|Tentorium|arachnoid/i.test(u.en));
-  P(r,'ns','tete-meninges','Méninges','Dure-mère, arachnoïde, faux du cerveau et tente du cervelet','Meninges','Dura mater, arachnoid, falx cerebri and tentorium',['nerv'],u=>!NERVE.test(u.en)&&!EYE.test(u.en)&&!EAR.test(u.en),{xray:true});
+  P(r,'ns','tete-meninges','Méninges','Dure-mère, arachnoïde et pie-mère en gradins','Meninges','Dura, arachnoid and pia mater, layered',['nerv'],u=>!NERVE.test(u.en)&&!EYE.test(u.en)&&!EAR.test(u.en),{xray:true,memb:true,view:65});
   P(r,'ns','tete-tronc-cerebral','Tronc cérébral','Mésencéphale, pont et moelle allongée','Brainstem','Midbrain, pons and medulla oblongata',['nerv'],u=>BSTEM.test(u.en),{color:/./});
   P(r,'ns','tete-ventricules','Ventricules','Isolés','Ventricles','Isolated',['nerv'],u=>/entricle|Aqueduct|Choroid|Central canal/.test(u.en))}
  P(r,'ns',p+'-nerfs',L,'Nerfs',E,'Nerves',['nerv','skel'],nvF);
  P(r,'ns',p+'-nerfs-muscles',L,'Nerfs et muscles',E,'Nerves and muscles',['nerv','musc','fasc','skel'],nvF);
  if(r==='head'){P(r,'se','tete-oeil','Œil',"Muscles, nerfs et vaisseaux de l'orbite",'Eye','Muscles, nerves and vessels of the orbit',['nerv','musc','cardio'],(u,c)=>c.x<2&&(u.s==='nerv'?(EYE.test(u.en)||/Oculomotor nerve|Trochlear nerve|Abducens nerve|Ophthalmic nerve/.test(u.en)):u.s==='musc'?u.id.indexOf('ZM')===0:/ophthalmic|ciliary|Central retinal|Lacrimal artery/i.test(u.en)));
   P(r,'se','tete-oreille','Oreille','Osselets, labyrinthe et nerf vestibulo-cochléaire','Ear','Ossicles, labyrinth and vestibulocochlear nerve',['nerv','skel','tegu'],(u,c)=>c.x<2&&(u.s==='nerv'?EAR.test(u.en):u.s==='tegu'?AUR.test(u.fr):/Marteau|Enclume|Étrier/.test(u.fr)),{color:new RegExp(AUR.source+'|Cochlée|Vestibule|Marteau|Enclume|Étrier')});
-  P(r,'se','tete-auricule','Oreille externe','Pavillon : hélix, anthélix, tragus, conque, lobule','External ear','Auricle: helix, antihelix, tragus, concha, lobule',['tegu'],(u,c)=>AUR.test(u.fr),{color:AUR})}
+  P(r,'se','tete-auricule','Oreille externe','Pavillon : hélix, anthélix, tragus, conque, lobule','External ear','Auricle: helix, antihelix, tragus, concha, lobule',['tegu'],(u,c)=>c.x<0&&AUR.test(u.fr),{color:AUR,sx:'M',view:-90})}
  if(r==='trunk'){
   P(r,'re','tronc-respiratoire','Système respiratoire','Avec la cage thoracique','Respiratory system','With the rib cage',['resp','skel'],u=>u.s!=='skel'||RIBS.test(u.fr));
   P(r,'re','tronc-respiratoire-isole','Système respiratoire','Isolé','Respiratory system','Isolated',['resp']);
   P(r,'di','tronc-digestif','Système digestif','Avec le squelette','Digestive system','With the skeleton',['digest','skel']);
   P(r,'di','tronc-foie','Foie','Segments colorés et voies biliaires','Liver','Coloured segments and biliary tract',['digest'],u=>/foie|Foie|biliaire|Conduit (cystique|hépatique|cholédoque)/.test(u.fr),{color:/Segment|Lobe carré/});
-  P(r,'di','tronc-pancreas','Pancréas','Pancréas, duodénum et voies biliaires','Pancreas','Pancreas, duodenum and biliary tract',['digest'],u=>/ancréa|biliaire|Conduit|Ampoule|Duodénum|Sphincter|Papille duodénale/.test(u.fr));
+  P(r,'di','tronc-pancreas','Pancréas','Pancréas, duodénum et voies biliaires','Pancreas','Pancreas, duodenum and biliary tract',['digest'],u=>/ancréa|biliaire|Conduit (hépatique|cystique|cholédoque|pancréatique)|Ampoule|Duodénum|Papille duodénale/.test(u.fr));
   P(r,'di','tronc-intestins','Intestins','Intestin grêle et côlon','Intestines','Small intestine and colon',['digest'],u=>/Duodénum|Jéjunum|Iléon|Cæcum|Côlon|colique|Appendice|Rectum|Valve/.test(u.fr));
   P(r,'di','tronc-digestif-isole','Système digestif','Isolé','Digestive system','Isolated',['digest']);
   P(r,'ug','tronc-urogenital-homme','Système urogénital','Homme','Urogenital system','Male',['uro','skel'],u=>u.s!=='skel'||PELV.test(u.fr),{sx:'M'});
   P(r,'ug','tronc-urogenital-femme','Système urogénital','Femme','Urogenital system','Female',['uro','skel'],u=>u.s!=='skel'||PELV.test(u.fr),{sx:'F'});
   P(r,'ug','tronc-reins','Reins','Reins, uretères et vessie','Kidneys','Kidneys, ureters and bladder',['uro'],u=>/Rein|rein|rénal|Uretère|Vessie|vessie|vésical|urétéral|Bassinet/.test(u.fr));
   P(r,'ug','tronc-rein-interne','Rein','Structure interne (cortex transparent)','Kidney','Internal structure (transparent cortex)',['uro','cardio'],u=>u.s==='uro'?/rein|rénal|Bassinet|Uretère/.test(u.fr):/rénale|rein/i.test(u.fr),{xray:true});
-  P(r,'ug','tronc-testicule','Testicule','Lobules, rete testis, épididyme et enveloppes','Testis','Lobules, rete testis, epididymis and coverings',['uro'],u=>/Testicule|testicule|Épididyme|Rete testis|Canalicules|vaginale|déférent/.test(u.fr),{sx:'M',xray:true,color:/Lobules|Épididyme|Rete|Canalicules/});
+  P(r,'ug','tronc-testicule','Testicule','Lobules, rete testis, épididyme et enveloppes','Testis','Lobules, rete testis, epididymis and coverings',['uro'],u=>/Testicule|testicule|Épididyme|Rete testis|Canalicules|Tunique vaginale \(|Albuginée|Fascia spermatique|crémaster|Dartos|Scrotum/.test(u.fr),{sx:'M',xray:true,memb:true,color:/Lobules|Épididyme|Rete|Canalicules/});
   P(r,'ns','tronc-moelle','Moelle épinière','Moelle, cornes, faisceaux, racines et sac dural','Spinal cord','Cord, horns, tracts, roots and dural sac',['nerv'],(u,c)=>c.y<1495&&Math.abs(c.x)<60&&/spinal|Cauda equina|horn of|Central canal|Spinal ganglion|root of spinal nerve|reticular process/i.test(u.en)&&!/telencephalon|trigeminal/i.test(u.en),{xray:true,color:/Corne|Tractus|Faisceau|Canal central|Ganglion|Racine|Processus/});
-  P(r,'ug','tronc-prostate','Prostate','Zones, urètre et vésicules séminales','Prostate','Zones, urethra and seminal vesicles',['uro'],u=>/rostat|Urètre|Colliculus|Stroma|séminal|déférent|jaculat|Vessie|vessie|vésical|urétéral/.test(u.fr),{sx:'M'});
+  P(r,'ug','tronc-prostate','Prostate','Zones, urètre et vésicules séminales','Prostate','Zones, urethra and seminal vesicles',['uro'],u=>/rostat|Urètre|Colliculus|Stroma|séminal|jaculat|Col de la vessie|Trigone/.test(u.fr),{sx:'M'});
+  P(r,'re','tronc-plevres','Plèvres','Plèvres viscérale et pariétale, en gradins','Pleurae','Visceral and parietal pleura, layered',['resp'],u=>/^Plèvre (viscérale|pariétale)$|^Lobe (supérieur|moyen|inférieur) du poumon/.test(u.fr),{memb:true});
+  P(r,'cv','tronc-pericarde','Péricarde','Péricarde fibreux, séreux et épicarde, en gradins','Pericardium','Fibrous and serous pericardium, epicardium, layered',['cardio'],u=>/Péricarde|Épicarde|^Veine cave supérieure$/.test(u.fr)||HEART.test(u.en),{memb:true,view:-20});
+  P(r,'ug','tronc-loge-renale','Loge rénale','Capsule, graisse périrénale et fascia de Gerota','Renal fascia','Capsule, perirenal fat and Gerota fascia',['uro','endo'],u=>/Capsule fibreuse du rein|Graisse périrénale|Fascia rénal|^Cortex rénal$|^Colonnes rénales$|^Pyramides rénales$|^Hile du rein$|^Bassinet|^Glande surrénale$/.test(u.fr),{memb:true});
   P(r,'ug','tronc-seins','Seins','Glande, conduits et ligaments','Breasts','Gland, ducts and ligaments',['endo','musc','skel'],u=>u.s==='endo'?u.sx==='F':u.s==='musc'?/pectoral/i.test(u.fr):RIBS.test(u.fr),{sx:'F',xray:true});
   P(r,'gl','tronc-glandes','Glandes et rate','','Glands and spleen','',['endo'],u=>u.sx!=='F')}
  P(r,'ly',p+'-lymphatique',L,'Système lymphatique',E,'Lymphatic system',['lymph','skel']);
- if(r==='body')P(r,'all','corps-visceres',L,'Viscères et squelette',E,'Viscera and skeleton',['resp','digest','uro','endo','skel']);
+ if(r==='body')P(r,'all','corps-visceres',L,'Viscères et squelette',E,'Viscera and skeleton',['resp','digest','uro','endo','skel'],u=>!/^Sein \(tissu/.test(u.fr));
  P(r,'all',p+'-tout',L,'Tous les systèmes',E,'All systems',ALLS);
  if(r==='body')P(r,'all','corps-peau',L,'Peau',E,'Skin',ALLS.concat(['tegu']),null,{opaque:true,sexThumb:true});
 });
-const PAL={'tete-encephale':'cerveau cerebral','tete-meninges':'meninge dure mere arachnoide pie mere dura','tete-tronc-cerebral':'brainstem bulbe pont mesencephale','tronc-moelle':'moelle spinale spinal cord rachis','tronc-testicule':'testicule testicules bourses scrotum epididyme testis','tete-auricule':'oreille pavillon auricule helix tragus','tronc-coeur':'coeur heart cardiaque','tete-oeil':'oeil yeux orbite','tete-oreille':'oreille osselets','tete-os':'crane skull','tete-crane-colore':'crane skull','tronc-colonne':'rachis vertebres spine','tronc-bassin':'pelvis hanche','tronc-respiratoire':'poumons lungs','tronc-respiratoire-isole':'poumons lungs trachee','tronc-digestif':'estomac foie intestin','tronc-digestif-isole':'estomac foie intestin','tronc-reins':'rein vessie urinaire','tronc-rein-interne':'rein reins kidney','tronc-prostate':'prostate','tronc-foie':'foie liver','tronc-pancreas':'pancreas','tronc-intestins':'intestin colon grele','tronc-seins':'sein seins','corps-os':'squelette skeleton','corps-ligaments':'articulations joints','jambe-ligaments':'genou cheville hanche menisque','bras-ligaments':'epaule coude poignet','corps-muscles':'muscles','corps-peau':'peau skin','tronc-urogenital-femme':'uterus ovaire vagin','tronc-urogenital-homme':'prostate testicule'};
+const PAL={'tete-encephale':'cerveau cerebral','tete-meninges':'meninge dure mere arachnoide pie mere dura','tete-tronc-cerebral':'brainstem bulbe pont mesencephale','tronc-moelle':'moelle spinale spinal cord rachis','tronc-testicule':'testicule testicules bourses scrotum epididyme testis enveloppes vaginale albuginee cremaster dartos','tronc-plevres':'plevre plevres pleura poumon','tronc-pericarde':'pericarde epicarde pericardium coeur','tronc-loge-renale':'loge renale fascia gerota graisse perirenale capsule rein','tete-auricule':'oreille pavillon auricule helix tragus','tronc-coeur':'coeur heart cardiaque','tete-oeil':'oeil yeux orbite','tete-oreille':'oreille osselets','tete-os':'crane skull','tete-crane-colore':'crane skull','tronc-colonne':'rachis vertebres spine','tronc-bassin':'pelvis hanche','tronc-respiratoire':'poumons lungs','tronc-respiratoire-isole':'poumons lungs trachee','tronc-digestif':'estomac foie intestin','tronc-digestif-isole':'estomac foie intestin','tronc-reins':'rein vessie urinaire','tronc-rein-interne':'rein reins kidney','tronc-prostate':'prostate','tronc-foie':'foie liver','tronc-pancreas':'pancreas','tronc-intestins':'intestin colon grele','tronc-seins':'sein seins','corps-os':'squelette skeleton','corps-ligaments':'articulations joints','jambe-ligaments':'genou cheville hanche menisque','bras-ligaments':'epaule coude poignet','corps-muscles':'muscles','corps-peau':'peau skin','tronc-urogenital-femme':'uterus ovaire vagin','tronc-urogenital-homme':'prostate testicule'};
 PR.forEach(q=>{q.key=norm([q.fr,q.sfr,q.en,q.sen,PAL[q.id]||''].join(' '))});
 const GORD=['ms','cv','ns','se','re','di','ug','gl','ly','all'];
 let region='body',cur=null;const scope=new Set();
-function inPreset(p,m){const u=m.userData;if(p.sys.indexOf(u.s)<0)return false;if(u.s==='nerv'&&/sulc/i.test(u.en))return false;const c=m.geometry.boundingSphere.center;if(!p.any&&!RG[p.r](u,c))return false;return !p.f||p.f(u,c)}
+function inPreset(p,m){const u=m.userData;if(p.sys.indexOf(u.s)<0)return false;if(!p.memb&&MEMB.test(u.fr))return false;if(u.s==='nerv'&&/sulc/i.test(u.en))return false;const c=m.geometry.boundingSphere.center;if(!p.any&&!RG[p.r](u,c))return false;return !p.f||p.f(u,c)}
 function rescope(){scope.clear();if(cur)for(const m of meshes)if(inPreset(cur,m))scope.add(m)}
 const FIG='<svg viewBox="0 0 40 56" width="30" height="42" aria-hidden="true"><circle class="fh" cx="20" cy="7" r="5.5"/><rect class="ft" x="13" y="14" width="14" height="20" rx="3"/><rect class="fa" x="6.5" y="14" width="5" height="22" rx="2.5"/><rect class="fa" x="28.5" y="14" width="5" height="22" rx="2.5"/><rect class="fl" x="13" y="35" width="6.3" height="20" rx="3"/><rect class="fl" x="20.7" y="35" width="6.3" height="20" rx="3"/></svg>';
 function renderHome(){const nav=$('#regions');nav.innerHTML='';Object.keys(RG).forEach(r=>{const b=document.createElement('button');b.type='button';b.className='reg r-'+r+(r===region?' on':'');b.innerHTML='<span>'+t('r_'+r)+'</span><img src="'+TD+'reg-'+r+'.webp" alt="" loading="lazy">';
@@ -342,12 +348,12 @@ function renderHome(){const nav=$('#regions');nav.innerHTML='';Object.keys(RG).f
    a.innerHTML='<img src="'+TD+p.id+(p.sexThumb&&ST.mdl==='F'?'-f':'')+'.webp" alt="" loading="lazy" width="320" height="360"><span class="ct"><b>'+esc(fr?p.fr:p.en)+'</b><small>'+esc(fr?p.sfr:p.sen)+'</small></span>';grid.appendChild(a)});
   sec.appendChild(grid);cat.appendChild(sec)})}
 function showHome(){cur=null;$('#app').hidden=true;$('#home').hidden=false;renderHome()}
-function openPreset(id,opt){const p=PR.find(x=>x.id===id);if(!p)return showHome();cur=p;if(p.sx&&p.sx!==ST.mdl){ST.mdl=p.sx;save()}
+function openPreset(id,opt){const p=PR.find(x=>x.id===id);if(!p)return showHome();cur=p;if(p.sx&&p.sx!==ST.mdl){ST.mdl=p.sx;save()}$('#sexM').classList.toggle('on',ST.mdl==='M');$('#sexF').classList.toggle('on',ST.mdl==='F');$('#femNote').hidden=ST.mdl!=='F';
  hist.length=0;hidden.clear();added.clear();isolate=null;ghost=false;S.clear();sel=null;multi=false;flash=null;mode='x';
  SYS.forEach(s=>{sysOn[s[0]]=p.sys.indexOf(s[0])>=0});rescope();
  $('#home').hidden=true;$('#app').hidden=false;$('#quiz').hidden=true;$('#bQuiz').classList.remove('on');$('#tools').hidden=false;closePops();
  const fr=ST.lang==='fr';$('#vtitle b').textContent=fr?p.fr:p.en;$('#vtitle small').textContent=fr?p.sfr:p.sen;
- layerUI($('#layers'));syncLayers();counts();size();refresh();card();fit(true)}
+ layerUI($('#layers'));syncLayers();counts();size();refresh();card();fit(true,p.view)}
 function route(){const h=location.hash.replace('#','');if(h&&PR.some(p=>p.id===h))openPreset(h);else showHome()}
 addEventListener('hashchange',route);
 function go(id){if(location.hash==='#'+id)openPreset(id);else location.hash=id}
@@ -355,7 +361,7 @@ function go(id){if(location.hash==='#'+id)openPreset(id);else location.hash=id}
 function baseMat(m){const p=m.userData;if(p.skin)return cur&&cur.opaque?mats.skinO:mats.skin;
  if(p.shell&&cur&&cur.opaque)return mats.skinO;
  if((p.shell||p.fr==='Dure-mère spinale')&&cur&&cur.xray)return p.xm||(p.xm=new THREE.MeshStandardMaterial({color:/Sein/.test(p.fr)?'#c08a6c':/Dure-mère/.test(p.fr)?'#c9ced6':/Arachnoïde/.test(p.fr)?'#f0ddd2':/vaginale/.test(p.fr)?'#e6d3bd':/Testicule/.test(p.fr)?'#d9b3a0':'#8a4636',roughness:.6,transparent:true,opacity:/Sein/.test(p.fr)?.45:/Dure-mère|Arachnoïde/.test(p.fr)?.22:/vaginale/.test(p.fr)?.18:.3,depthWrite:false,side:THREE.DoubleSide}));
- if(cur&&cur.color&&(cur.color===true?p.s==='skel':cur.color.test(p.fr)))return p.cm||(p.cm=mk('hsl('+(meshes.indexOf(m)*47%360)+',62%,'+(p.s==='skel'?52:40)+'%)',.5,'soft'));return p.look||(p.look=look(p))}
+ if(cur&&cur.color&&(cur.color===true?p.s==='skel':cur.color.test(p.fr)))return p.cm||(p.cm=mk('hsl('+(hid(p.id)*47%360)+',62%,'+(p.s==='skel'?52:40)+'%)',.5,'soft'));return p.look||(p.look=look(p))}
 function refresh(){const cover=!!(cur&&cur.opaque&&!isolate&&!ghost&&mode==='x'&&sysOn.tegu&&meshes.some(m=>m.userData.skin&&sexOK(m.userData)&&!hidden.has(m)));
  for(const m of meshes){const p=m.userData;
   m.visible=!!(scope.has(m)&&sexOK(p)&&((added.has(m)&&!hidden.has(m))||(isolate?isolate.has(m):(sysOn[p.s]&&!hidden.has(m)&&(!cover||p.s==='tegu'||/Sein \(|Mamelon|Aréole/.test(p.fr))&&(cover||!(cur&&cur.opaque)||p.s!=='tegu'||p.skin)))||S.has(m)||(flash&&flash.m===m)));
@@ -370,10 +376,10 @@ function fly(target,dist,d,instant){const dir=cam.position.clone().sub(ctl.targe
   if(instant){anim=null;cam.position.copy(p1);ctl.target.copy(target);ctl.update();dirty=true;return}
   anim={t:0,p0:cam.position.clone(),t0:ctl.target.clone(),p1:p1,t1:target.clone()}}
 function sphere(list){const box=new THREE.Box3();for(const m of list){const b=m.geometry.boundingSphere;box.expandByPoint(b.center.clone().addScalar(b.radius));box.expandByPoint(b.center.clone().addScalar(-b.radius))}return box.getBoundingSphere(new THREE.Sphere())}
-function distFor(r){const v=cam.fov*Math.PI/360,hv=Math.atan(Math.tan(v)*cam.aspect);return Math.max(r/Math.sin(v),r/Math.sin(hv))*.92}
+function distFor(r){const v=cam.fov*Math.PI/360,hv=Math.atan(Math.tan(v)*cam.aspect);return Math.max(r/Math.sin(v),r/Math.sin(hv))*1.04}
 function fit(instant,d){const list=meshes.filter(m=>scope.has(m)&&sexOK(m.userData)&&sysOn[m.userData.s]&&(!m.userData.skin||(cur&&cur.opaque)));if(!list.length)return;
   const b=new THREE.Box3();list.forEach(m=>{m.geometry.boundingBox||m.geometry.computeBoundingBox();b.union(m.geometry.boundingBox)});const s=b.getBoundingSphere(new THREE.Sphere());
-  fly(s.center,distFor(s.radius),d===undefined?new THREE.Vector3(0,.08,1):d,instant)}
+  const cc=s.center.clone();cc.y+=s.radius*.04;fly(cc,distFor(s.radius),d===undefined?new THREE.Vector3(0,.08,1):d,instant)}
 function focus(list){const b=sphere(list.length?list:[list]);fly(b.center,Math.max(distFor(b.radius)*1.25,110))}
 function loop(){requestAnimationFrame(loop);if($('#app').hidden)return;
   if(anim){anim.t=Math.min(1,anim.t+.06);const k=1-Math.pow(1-anim.t,3);cam.position.lerpVectors(anim.p0,anim.p1,k);ctl.target.lerpVectors(anim.t0,anim.t1,k);if(anim.t>=1)anim=null;dirty=true}
@@ -387,7 +393,7 @@ function norm(s){return s.replace(/œ/g,'oe').replace(/Œ/g,'Oe').replace(/æ/g,
 function alias(fr,en,s){let a='';
  if(/Incisive|Canine|molaire/.test(fr))a+=' dent dents tooth teeth';
  if(/Jéjunum|Iléon|Duodénum/.test(fr))a+=' intestin grele small intestine';
- if(/lactif|Mamelon|Aréole|mammaire|sein/.test(fr))a+=' sein seins poitrine breast';if(/rénal|rénales|rein/.test(fr))a+=' rein reins kidney';if(/rostat|Colliculus|Stroma fibro/.test(fr))a+=' prostate';if(/Segment|Lobe carré|Ligament (falciforme|rond du foie|coronaire|triangulaire|veineux)|Hile du foie/.test(fr))a+=' foie liver';if(/Conduit (cystique|hépatique|cholédoque)|Ampoule hépato/.test(fr))a+=' voies biliaires bile';if(/vésical|vessie|urétéral/.test(fr))a+=' vessie bladder';if(/trompe/.test(fr))a+=' trompe uterine fallope';
+ if(/lactif|Mamelon|Aréole|mammaire|sein/.test(fr))a+=' sein seins poitrine breast';if(/rénal|rénales|rein/.test(fr))a+=' rein reins kidney';if(/rostat|Colliculus|Stroma fibro/.test(fr))a+=' prostate';if(/^Segment [IVX]+a?b? du foie|Lobe carré|Ligament (falciforme|rond du foie|coronaire|triangulaire|veineux)|Hile du foie/.test(fr))a+=' foie liver';if(/Conduit (cystique|hépatique|cholédoque)|Ampoule hépato/.test(fr))a+=' voies biliaires bile';if(/vésical|vessie|urétéral/.test(fr))a+=' vessie bladder';if(/trompe/.test(fr))a+=' trompe uterine fallope';
  if(/Côlon|Rectum|Appendice|Ténia|Cæcum|colique/.test(fr))a+=' gros intestin large intestine';
  if(s==='cardio'&&/atrium|ventricle|leaflet|papillary|coronary|cardiac|interventricular/i.test(en))a+=' coeur heart cardiaque';
  if(/atrium/i.test(en))a+=' oreillette';if(/^Vestibule/.test(fr))a+=' canal canaux semi circulaires labyrinthe utricule saccule';
@@ -429,22 +435,22 @@ function layerUI(el){el.innerHTML='';SYS.forEach(s=>{if(cur&&cur.sys.indexOf(s[0
   b.onclick=()=>{push();sysOn[s[0]]=!sysOn[s[0]];isolate=null;syncLayers();refresh()};el.appendChild(b)})}
 function syncLayers(){document.querySelectorAll('.layer').forEach(b=>{const on=sysOn[b.dataset.s];b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.querySelector('span').textContent=sysLabel(b.dataset.s)})}
 function counts(){const c={};for(const m of scope)if(sexOK(m.userData))c[m.userData.s]=(c[m.userData.s]||0)+1;document.querySelectorAll('.layer').forEach(b=>{b.querySelector('em').textContent=c[b.dataset.s]||''})}
-$('#showAll').onclick=()=>{push();hidden.clear();isolate=null;ghost=false;refresh()};
+$('#showAll').onclick=()=>{push();hidden.clear();isolate=null;ghost=false;if(cur)SYS.forEach(x=>{sysOn[x[0]]=cur.sys.indexOf(x[0])>=0});syncLayers();refresh()};
 // ---------- sélection
 const ray=new THREE.Raycaster(),v2=new THREE.Vector2();
 function pick(e){const r=cv.getBoundingClientRect();v2.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(v2,cam);
   const h=ray.intersectObjects(meshes.filter(m=>m.visible&&m.material!==mGhost),false);
   if(!h.length)return null;if(mode==='x'&&h.length>1&&!(cur&&cur.opaque)){const tr=x=>x.object.userData.skin||(x.object.userData.shell&&cur&&cur.xray);if(tr(h[0])){const o=h.find(x=>!tr(x));if(o)return o.object}}return h[0].object}
-function label(p){const n=nm(p);return n+(p.side&&!/droite?s?\b|gauches?\b|right|left/i.test(n)?(p.side==='D'?t('sR'):t('sL')):'')}
+function label(p){const n=nm(p);return n+(p.side&&!/(\b(droite?s?|gauches?)|\((droite?|gauche)\))\s*$/i.test(n)?(p.side==='D'?t('sR'):t('sL')):'')}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 let coursOpen=true;let cardMin=false;try{cardMin=localStorage.getItem('corpus3d-card')==='1'}catch(e){}
-function card(){const el=$('#right');if(!sel||mode==='q'){el.hidden=true;return}const p=sel.userData,f=p.f>=0?A.fiches[p.f]:null;
+function card(){const el=$('#right');if(!sel||mode==='q'){el.hidden=true;return}const p=sel.userData,f=p.f>=0?((ST.lang==='en'&&A.fen&&A.fen[p.f])||A.fiches[p.f]):null,fl=ST.lang==='en'&&A.fen&&A.fen[p.f]?'en':'fr';
   let h='<div class="chead"><div><h2>'+esc(nm(p))+'</h2><div class="en">'+esc(alt(p))+'</div></div><button type="button" id="bMin" aria-expanded="'+(!cardMin)+'">'+(cardMin?t('showCard'):t('hideCard'))+'</button></div>';
   if(!cardMin){h+='<div class="chips"><span>'+esc(sysLabel(p.s))+'</span>'+(p.side?'<span>'+(p.side==='D'?t('cR'):t('cL'))+'</span>':'')+(S.size>1?'<span class="cnt">'+t('nSel')(S.size)+'</span>':'')+'</div>';
-  if(f&&t('frOnly'))h+='<p class="mut">'+t('frOnly')+'</p>';
-  if(f&&f.m)h+='<dl lang="fr"><div><dt>'+t('origin')+'</dt><dd>'+esc(f.m[0])+'</dd></div><div><dt>'+t('insertion')+'</dt><dd>'+esc(f.m[1])+'</dd></div><div><dt>'+t('innerv')+'</dt><dd>'+esc(f.m[2])+'</dd></div><div><dt>'+t('action')+'</dt><dd>'+esc(f.m[3])+'</dd></div></dl>';
-  else if(f)h+='<p lang="fr">'+esc(f.t)+'</p>';else if(p.c==null)h+='<p class="mut">'+t('noCard')+'</p>';
-  if(p.c!=null&&A.cours){const c=A.cours[p.c];h+='<details class="cours" lang="fr"'+(coursOpen?' open':'')+'><summary>'+t('course')+'<span>'+esc(c.s)+'</span></summary><dl>'+c.p.map(x=>'<div><dt>'+esc(x[0])+'</dt><dd>'+esc(x[1])+'</dd></div>').join('')+'</dl></details>'}
+  
+  if(f&&f.m)h+='<dl lang="'+fl+'"><div><dt>'+t('origin')+'</dt><dd>'+esc(f.m[0])+'</dd></div><div><dt>'+t('insertion')+'</dt><dd>'+esc(f.m[1])+'</dd></div><div><dt>'+t('innerv')+'</dt><dd>'+esc(f.m[2])+'</dd></div><div><dt>'+t('action')+'</dt><dd>'+esc(f.m[3])+'</dd></div></dl>';
+  else if(f)h+='<p lang="'+fl+'">'+esc(f.t)+'</p>';else if(p.c==null)h+='<p class="mut">'+t('noCard')+'</p>';
+  if(p.c!=null&&A.cours){const cs=[].concat(p.c).map(k=>A.cours[k]).filter(Boolean);if(cs.length)h+='<details class="cours" lang="fr"'+(coursOpen?' open':'')+'><summary>'+t('course')+'<span>'+esc([...new Set(cs.map(c=>c.s))].join(' · '))+'</span></summary>'+cs.map(c=>(cs.length>1?'<h3>'+esc(c.s)+'</h3>':'')+'<dl>'+c.p.map(x=>'<div><dt>'+esc(x[0])+'</dt><dd>'+esc(x[1])+'</dd></div>').join('')+'</dl>').join('')+'</details>'}
   h+='<div class="row">'+(SEMIO?'<a class="btnlink primary" target="_blank" rel="noopener" href="'+esc(SEMIO+'?ask='+encodeURIComponent(t('semioQ')(nm(p))))+'">'+t('askSemio')+'</a>':'')+'<button type="button" id="bClose">'+t('close')+'</button></div>'}
   el.innerHTML=h;el.hidden=false;el.classList.toggle('min',cardMin);
   {const dc=el.querySelector('details.cours');if(dc)dc.ontoggle=()=>{coursOpen=dc.open}}
@@ -460,19 +466,19 @@ function card(){const el=$('#right');if(!sel||mode==='q'){el.hidden=true;return}
  window.cardHome=()=>{['left','top','right','bottom','maxHeight'].forEach(k=>el.style[k]='')};
  addEventListener('resize',()=>{if(el.style.left)place(parseFloat(el.style.left),parseFloat(el.style.top))})})();
 function select(m,opt){
-  if(!m){S.clear();sel=null;ghost=false;isolate=null}
+  if(!m){S.clear();sel=null}
   else if(multi&&!(opt&&opt.reveal)){if(S.has(m)){S.delete(m);sel=[...S].pop()||null}else{S.add(m);sel=m}}
   else{S.clear();S.add(m);sel=m;if(opt&&opt.reveal){scope.add(m);ghost=true;isolate=null;sysOn[m.userData.s]=true;syncLayers()}}
   refresh();card();if(m&&opt&&opt.fly)focus([m])}
-function snap(){return{a:new Set(added),h:new Set(hidden),i:isolate&&new Set(isolate),g:ghost,s:Object.assign({},sysOn),S:[...S],sel:sel}}
+function snap(){return{sc:new Set(scope),a:new Set(added),h:new Set(hidden),i:isolate&&new Set(isolate),g:ghost,s:Object.assign({},sysOn),S:[...S],sel:sel}}
 function push(){hist.push(snap());if(hist.length>40)hist.shift()}
-function undo(){const x=hist.pop();if(!x)return;hidden.clear();x.h.forEach(m=>hidden.add(m));added.clear();(x.a||[]).forEach(m=>added.add(m));isolate=x.i;ghost=x.g;Object.assign(sysOn,x.s);S.clear();x.S.forEach(m=>S.add(m));sel=x.sel;syncLayers();refresh();card()}
+function undo(){const x=hist.pop();if(!x)return;hidden.clear();x.h.forEach(m=>hidden.add(m));added.clear();(x.a||[]).forEach(m=>added.add(m));if(x.sc){scope.clear();x.sc.forEach(m=>scope.add(m));counts()}isolate=x.i;ghost=x.g;Object.assign(sysOn,x.s);S.clear();x.S.forEach(m=>S.add(m));sel=x.sel;syncLayers();refresh();card()}
 function resetAll(){if(!cur)return;cardHome();hist.length=0;hidden.clear();added.clear();isolate=null;ghost=false;S.clear();sel=null;multi=false;SYS.forEach(s=>{sysOn[s[0]]=cur.sys.indexOf(s[0])>=0});rescope();syncLayers();refresh();card();fit(false)}
-function bar(){const n=S.size;$('#tGhost').disabled=!n;$('#tIso').disabled=!n;$('#tHide').disabled=!n;$('#tUndo').disabled=!hist.length;
+function bar(){const n=S.size;$('#tGhost').disabled=!n;$('#tIso').disabled=!n&&!isolate;$('#tHide').disabled=!n;$('#tUndo').disabled=!hist.length;
   $('#tGhost').classList.toggle('on',ghost);$('#tIso').classList.toggle('on',!!isolate);$('#tMulti').classList.toggle('on',multi);$('#tMulti').setAttribute('aria-pressed',multi)}
 $('#tGhost').onclick=()=>{push();ghost=!ghost;isolate=null;refresh()};
 $('#tIso').onclick=()=>{push();isolate=isolate?null:new Set(S);ghost=false;refresh()};
-$('#tHide').onclick=()=>{push();S.forEach(m=>hidden.add(m));S.clear();sel=null;refresh();card()};
+$('#tHide').onclick=()=>{push();S.forEach(m=>{hidden.add(m);if(isolate)isolate.delete(m)});if(isolate&&!isolate.size)isolate=null;S.clear();sel=null;refresh();card()};
 $('#tCenter').onclick=()=>{if(S.size)focus([...S]);else fit(false,null)};
 $('#tMulti').onclick=()=>{multi=!multi;bar()};
 $('#tUndo').onclick=undo;$('#tReset').onclick=resetAll;
@@ -499,17 +505,17 @@ function results(inp,el,onPick,canAdd){const q=norm(inp.value.trim());if(q.lengt
   el.innerHTML='';if(!meshes.length){el.innerHTML='<div class="mut pad">'+t('loadingS')+'</div>';el.hidden=false;return}
   const ws=q.split(/\s+/),ph=PR.filter(x=>ws.every(w=>x.key.includes(w))).sort((a,b)=>(norm(a.fr+' '+a.en).includes(q)?0:1)-(norm(b.fr+' '+b.en).includes(q)?0:1)).slice(0,6),hit=meshes.filter(m=>ws.every(w=>m.userData.key.includes(w))).sort((a,b)=>nm(a.userData).localeCompare(nm(b.userData),ST.lang)||a.userData.side.localeCompare(b.userData.side)).slice(0,50);
   if(!hit.length&&!ph.length)el.innerHTML='<div class="mut pad">'+t('noRes')+'</div>';
-  ph.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='pres';const fr=ST.lang==='fr';b.innerHTML='<b>'+esc(fr?x.fr:x.en)+'</b>'+((fr?x.sfr:x.sen)?' · '+esc(fr?x.sfr:x.sen):'')+'<small>'+t('model3d')+'</small>';b.onclick=()=>{el.hidden=true;closePops();go(x.id)};row(el,b,canAdd&&cur&&(()=>meshes.filter(m=>inPreset(x,m)&&sexOK(m.userData))))});
+  ph.forEach(x=>{const b=document.createElement('button');b.type='button';b.className='pres';const fr=ST.lang==='fr';b.innerHTML='<b>'+esc(fr?x.fr:x.en)+'</b>'+((fr?x.sfr:x.sen)?' · '+esc(fr?x.sfr:x.sen):'')+'<small>'+t('model3d')+'</small>';b.onclick=()=>{el.hidden=true;closePops();go(x.id)};row(el,b,canAdd&&cur&&(()=>{if(x.sx&&x.sx!==ST.mdl){ST.mdl=x.sx;save();applyUI()}return meshes.filter(m=>inPreset(x,m)&&sexOK(m.userData))}))});
   hit.forEach(m=>{const b=document.createElement('button');b.type='button';b.innerHTML=esc(label(m.userData))+'<small>'+esc(alt(m.userData))+' · '+esc(sysLabel(m.userData.s))+'</small>';b.onclick=()=>onPick(m);row(el,b,canAdd&&cur&&(()=>[m]))});el.hidden=false}
 function row(el,b,get){if(!get){el.appendChild(b);return}const w=document.createElement('div');w.className='rrow';const a=document.createElement('button');a.type='button';a.className='radd';a.textContent=t('add');a.onclick=e=>{e.stopPropagation();const ms=get();if(ms.length===1)sw(ms[0]);addToScene(ms.filter(m=>sexOK(m.userData)));a.textContent=t('added');a.disabled=true};w.appendChild(b);w.appendChild(a);el.appendChild(w)}
-function addToScene(ms){push();ms.forEach(m=>{scope.add(m);added.add(m);hidden.delete(m)});S.clear();ms.forEach(m=>S.add(m));sel=ms[ms.length-1]||null;ghost=false;refresh();card();if(ms.length)focus(ms)}
+function addToScene(ms){push();ms.forEach(m=>{scope.add(m);added.add(m);hidden.delete(m)});S.clear();ms.forEach(m=>S.add(m));sel=ms[ms.length-1]||null;ghost=false;refresh();counts();card();if(ms.length)focus(ms)}
 const sw=m=>{if(m.userData.sx&&m.userData.sx!==ST.mdl){ST.mdl=m.userData.sx;save();applyUI()}};
 const vSearch=()=>results($('#q'),$('#res'),m=>{sw(m);push();select(m,{reveal:true,fly:true});closePops()},true);
 const hSearch=()=>results($('#hq'),$('#hres'),m=>{$('#hres').hidden=true;sw(m);go('corps-tout');setTimeout(()=>{if(cur)select(m,{reveal:true,fly:true})},60)});
-$('#q').addEventListener('input',vSearch);$('#hq').addEventListener('input',hSearch);
+$('#q').addEventListener('input',vSearch);document.addEventListener('pointerdown',e=>{if(!e.target.closest('#hres,#hq'))$('#hres').hidden=true});document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#hres').hidden=true}});$('#hq').addEventListener('input',hSearch);
 // ---------- quiz
 let mode='x',qm=1,target=null,tries=0,good=0,asked=0,answered=true;
-function setMode(m){mode=m;$('#bQuiz').classList.toggle('on',m==='q');$('#quiz').hidden=m!=='q';$('#tools').hidden=m==='q';closePops();select(null);flash=null;if(m==='q')next();else refresh()}
+function setMode(m){mode=m;$('#bQuiz').classList.toggle('on',m==='q');$('#quiz').hidden=m!=='q';$('#tools').hidden=m==='q';closePops();select(null);flash=null;ghost=false;if(m==='q')next();else refresh()}
 $('#bQuiz').onclick=()=>setMode(mode==='q'?'x':'q');
 $('#qm1').onclick=()=>{qm=1;$('#qm1').classList.add('on');$('#qm2').classList.remove('on');next()};
 $('#qm2').onclick=()=>{qm=2;$('#qm2').classList.add('on');$('#qm1').classList.remove('on');next()};
@@ -530,9 +536,9 @@ function fb(ok,s){const e=$('#qfb');e.textContent=s;e.className=ok?'ok':'bad'}
 function score(){$('#score').textContent=good+' / '+asked}
 function reveal(){if(!target)return;flash={m:target,mat:mOk};ghost=true;refresh();focus(target)}
 function quizClick(m){if(qm!==1||answered||!target||!m)return;
-  if(m.userData.fr===target.userData.fr){answered=true;asked++;if(tries===0)good++;target=m;flash={m:m,mat:mOk};refresh();fb(true,tries?t('after')(tries+1):t('first'));score()}
+  if(m.userData.fr===target.userData.fr&&m.userData.side===target.userData.side){answered=true;asked++;if(tries===0)good++;target=m;flash={m:m,mat:mOk};refresh();fb(true,tries?t('after')(tries+1):t('first'));score()}
   else{tries++;flash={m:m,mat:mBad};refresh();fb(false,t('thisIs')(label(m.userData)));setTimeout(()=>{if(flash&&flash.m===m){flash=null;refresh()}},900)}}
-$('#qnext').onclick=next;$('#qshow').onclick=()=>{if(!target)return;if(!answered){answered=true;asked++;score()}fb(false,t('answer')+label(target.userData));reveal()};
+$('#qnext').onclick=next;$('#qshow').onclick=()=>{if(!target)return;if(!answered){answered=true;asked++;score()}fb(false,t('answer')+label(target.userData));const gb=[...$('#choices').children].find(x=>x.dataset.k===target.userData.fr);if(gb)gb.classList.add('good');reveal()};
 // ---------- langue, sexe, thème
 function isDark(){return root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches}
 function applyUI(){root.lang=ST.lang;document.querySelectorAll('[data-t]').forEach(e=>{e.textContent=t(e.dataset.t)});document.querySelectorAll('#tools button').forEach(b=>{b.title=b.querySelector('span').textContent});
@@ -541,7 +547,8 @@ function applyUI(){root.lang=ST.lang;document.querySelectorAll('[data-t]').forEa
   $('#sexM').classList.toggle('on',ST.mdl==='M');$('#sexF').classList.toggle('on',ST.mdl==='F');$('#femNote').hidden=ST.mdl!=='F';
   if(cur){const fr=ST.lang==='fr';$('#vtitle b').textContent=fr?cur.fr:cur.en;$('#vtitle small').textContent=fr?cur.sfr:cur.sen;syncLayers();counts();card();if(mode==='q')next()}else renderHome()}
 function setLang(l){ST.lang=l;save();applyUI()}
-function setSex(s){ST.mdl=s;save();[...S].forEach(m=>{if(!sexOK(m.userData))S.delete(m)});if(sel&&!S.has(sel))sel=[...S].pop()||null;refresh();applyUI()}
+const SWAP={'tronc-urogenital-homme':'tronc-urogenital-femme','tronc-urogenital-femme':'tronc-urogenital-homme','tronc-testicule':'tronc-urogenital-femme','tronc-prostate':'tronc-urogenital-femme','tronc-seins':'tronc-muscles','tete-auricule':'tete-oreille'};
+function setSex(s){if(cur&&cur.sx&&cur.sx!==s&&SWAP[cur.id]){ST.mdl=s;save();applyUI();go(SWAP[cur.id]);return}ST.mdl=s;save();[...S].forEach(m=>{if(!sexOK(m.userData))S.delete(m)});if(sel&&!S.has(sel))sel=[...S].pop()||null;refresh();applyUI()}
 $('#lgFR').onclick=()=>setLang('fr');$('#lgEN').onclick=()=>setLang('en');$('#sexM').onclick=()=>setSex('M');$('#sexF').onclick=()=>setSex('F');
 $('#theme').onclick=()=>{root.dataset.theme=isDark()?'light':'dark';save();applyUI();dirty=true};
 // ---------- démarrage
