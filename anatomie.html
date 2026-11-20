@@ -125,6 +125,21 @@ p{margin:0;line-height:1.5}
 .chead{cursor:grab;touch-action:none;user-select:none}#right.drag .chead{cursor:grabbing}#right.drag{box-shadow:0 10px 30px #0004}
 #vbar .seg button{border-radius:0}#vbar .seg button:first-child{border-radius:6px 0 0 6px}#vbar .seg button:last-child{border-radius:0 6px 6px 0}#sysPop #femNote{font-size:12px;margin:0}
 .btnlink{display:inline-block;border:1px solid var(--line);background:var(--chip);border-radius:6px;padding:6px 10px;color:inherit;text-decoration:none;font-weight:600}.btnlink:hover{border-color:var(--accent)}.btnlink.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+
+@media (max-width:760px){
+ #vbar{top:calc(8px + env(safe-area-inset-top,0px));left:8px;right:8px;max-width:none;gap:5px}
+ #vbar button{padding:6px 9px;font-size:12.5px}
+ #back{font-size:0!important;padding:6px 11px!important}#back::before{content:'←';font-size:16px;line-height:1}
+ #vtitle{order:9;flex-basis:100%;padding:2px 2px 0}#vtitle b{font-size:14px}#vtitle small{font-size:11px}
+ #tools{top:auto;bottom:calc(8px + env(safe-area-inset-bottom,0px));left:8px;right:8px;width:auto;flex-direction:row;justify-content:space-between;gap:4px}
+ #tools button{flex:1;padding:9px 0;min-width:0}#tools svg{width:21px;height:21px}
+ #right,#quiz,#sysPop,#searchPop,#vpop{top:auto!important;left:8px!important;right:8px!important;width:auto!important;bottom:calc(62px + env(safe-area-inset-bottom,0px))!important;max-height:min(50%,calc(100% - 180px))!important;overflow:auto;z-index:4}
+ #right .chead h2{font-size:17px}#right.min{max-height:none!important}
+ #regions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:6px;overflow:visible}
+ .reg{flex-direction:column-reverse;justify-content:center;align-items:center;padding:6px 2px;min-height:0;gap:4px}
+ .reg span{flex:none;text-align:center;font-size:10.5px;line-height:1.15}.reg img{width:30px;height:42px;display:block}
+ .cards{gap:10px}
+}
 </style>
 <div id="home">
   <header class="top">
