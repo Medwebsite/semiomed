@@ -140,6 +140,17 @@ p{margin:0;line-height:1.5}
  .reg span{flex:none;text-align:center;font-size:10.5px;line-height:1.15}.reg img{width:30px;height:42px;display:block}
  .cards{gap:10px}
 }
+
+#tools button:disabled{pointer-events:none}
+#tools button .sh{display:none}
+#hint{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));max-width:min(420px,calc(100% - 140px));background:var(--fg);color:var(--bg);padding:8px 12px;border-radius:8px;font-size:13px;line-height:1.35;z-index:6;text-align:center;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+#hint b{display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+@media (max-width:760px){
+ #tools button{padding:6px 0 5px;gap:2px}#tools svg{width:20px;height:20px}
+ #tools button span{display:none!important}#tools button .sh{display:block!important;font-size:9.5px;font-weight:600;line-height:1.1;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+ #right,#quiz,#sysPop,#searchPop,#vpop{bottom:calc(70px + env(safe-area-inset-bottom,0px))!important}
+ #hint{bottom:calc(72px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 32px)}
+}
 </style>
 <div id="home">
   <header class="top">
@@ -184,6 +195,7 @@ p{margin:0;line-height:1.5}
     <div class="row"><button type="button" id="vCenter" data-t="centerView"></button></div>
   </div>
   <div id="tip" hidden></div>
+  <div id="hint" hidden></div>
   <div id="load"><div><b data-t="loading"></b><div id="bar"><b></b></div><span class="mut" id="loadt">0 %</span></div></div>
 </div>
 <script src="three.min.js"></script>
@@ -568,7 +580,12 @@ function quizClick(m){if(qm!==1||answered||!target||!m)return;
 $('#qnext').onclick=next;$('#qshow').onclick=()=>{if(qm===3)return checkQ();if(!target)return;if(!answered){answered=true;asked++;score()}fb(false,t('answer')+label(target.userData));const gb=[...$('#choices').children].find(x=>x.dataset.k===target.userData.fr);if(gb)gb.classList.add('good');reveal()};
 // ---------- langue, sexe, thème
 function isDark(){return root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches}
-function applyUI(){root.lang=ST.lang;document.querySelectorAll('[data-t]').forEach(e=>{e.textContent=t(e.dataset.t)});document.querySelectorAll('#tools button').forEach(b=>{b.title=b.querySelector('span').textContent});
+
+const HELP={fr:{views:['Vues','Choisir un angle : face, dos, profil, dessus, dessous.'],ghost:['Transp.','Rend transparent tout ce qui n\'est pas sélectionné, pour voir la structure dans son contexte.'],center:['Centrer','Recentre la caméra sur la structure sélectionnée (ou sur tout le modèle).'],isolate:['Isoler','N\'affiche plus que la ou les structures sélectionnées. Touchez encore pour tout revoir.'],multi:['Multi','Permet de sélectionner plusieurs structures à la suite.'],hide:['Masquer','Cache la structure sélectionnée pour voir ce qu\'il y a dessous.'],undo:['Annuler','Annule la dernière action (masquer, isoler…).'],resetAll:['Réinit.','Revient à l\'affichage de départ de la planche.']},
+ en:{views:['Views','Pick an angle: front, back, side, top, bottom.'],ghost:['X-ray','Makes everything except the selection transparent, to see it in context.'],center:['Center','Centers the camera on the selection (or the whole model).'],isolate:['Isolate','Shows only the selected structure(s). Tap again to show all.'],multi:['Multi','Lets you select several structures in a row.'],hide:['Hide','Hides the selected structure to see what lies beneath.'],undo:['Undo','Undoes the last action (hide, isolate…).'],resetAll:['Reset','Returns to the plate\'s starting view.']}};
+let hintT=0;function hint(k,need){const H=HELP[ST.lang==='en'?'en':'fr'][k];if(!H)return;const el=document.getElementById('hint');el.innerHTML='';const b=document.createElement('b');b.textContent=H[0];el.appendChild(b);el.appendChild(document.createTextNode(H[1]+(need?(ST.lang==='en'?' Tap a structure first.':' Touchez d\'abord une structure.'):'')));el.hidden=false;clearTimeout(hintT);hintT=setTimeout(()=>{el.hidden=true},need?3200:2400)}
+document.getElementById('tools').addEventListener('click',e=>{let b=e.target.closest('button');if(!b){b=[...e.currentTarget.querySelectorAll('button')].find(x=>{const r=x.getBoundingClientRect();return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom})}if(!b)return;const k=b.querySelector('span').dataset.t;if(b.disabled)hint(k,true);else{try{const n=+(localStorage.getItem('hint_'+k)||0);if(n<2||b.disabled){localStorage.setItem('hint_'+k,n+1);hint(k,false)}}catch(_){hint(k,false)}}});
+function applyUI(){root.lang=ST.lang;document.querySelectorAll('[data-t]').forEach(e=>{e.textContent=t(e.dataset.t)});document.querySelectorAll('#tools button').forEach(b=>{const k=b.querySelector('span').dataset.t,H=HELP[ST.lang==='en'?'en':'fr'][k];b.title=b.querySelector('span').textContent+(H?' — '+H[1]:'');let x=b.querySelector('.sh');if(!x){x=document.createElement('i');x.className='sh';x.style.fontStyle='normal';b.appendChild(x)}x.textContent=H?H[0]:b.querySelector('span').textContent});
   $('#q').placeholder=t('search');$('#hq').placeholder=t('hsearch');cv.setAttribute('aria-label',t('cv'));$('#theme').textContent=isDark()?t('light'):t('dark');
   $('#lgFR').classList.toggle('on',ST.lang==='fr');$('#lgEN').classList.toggle('on',ST.lang==='en');
   $('#sexM').classList.toggle('on',ST.mdl==='M');$('#sexF').classList.toggle('on',ST.mdl==='F');$('#femNote').hidden=ST.mdl!=='F';
