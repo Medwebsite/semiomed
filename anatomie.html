@@ -502,7 +502,7 @@ function card(){const el=$('#right');if(!sel||mode==='q'){el.hidden=true;return}
   if(!cardMin){h+='<div class="chips"><span>'+esc(sysLabel(p.s))+'</span>'+(p.side?'<span>'+(p.side==='D'?t('cR'):t('cL'))+'</span>':'')+(S.size>1?'<span class="cnt">'+t('nSel')(S.size)+'</span>':'')+'</div>';
   
   if(f&&f.m)h+='<dl lang="'+fl+'"><div><dt>'+t('origin')+'</dt><dd>'+esc(f.m[0])+'</dd></div><div><dt>'+t('insertion')+'</dt><dd>'+esc(f.m[1])+'</dd></div><div><dt>'+t('innerv')+'</dt><dd>'+esc(f.m[2])+'</dd></div><div><dt>'+t('action')+'</dt><dd>'+esc(f.m[3])+'</dd></div></dl>';
-  else if(f)h+='<p lang="'+fl+'">'+esc(f.t)+'</p>';else if(p.c==null)h+='<p class="mut">'+t('noCard')+'</p>';
+  if(f&&f.t)h+='<p lang="'+fl+'">'+esc(f.t)+'</p>';else if(!f&&p.c==null)h+='<p class="mut">'+t('noCard')+'</p>';
   if(p.c!=null&&A.cours){const cs=[].concat(p.c).map(k=>(ST.lang==='en'&&A.cours_en&&A.cours_en[k])||A.cours[k]).filter(Boolean);if(cs.length)h+='<details class="cours" lang="'+(ST.lang==='en'&&A.cours_en?'en':'fr')+'"'+(coursOpen?' open':'')+'><summary>'+t('course')+'<span>'+esc([...new Set(cs.map(c=>c.s))].join(' · '))+'</span></summary>'+cs.map(c=>(cs.length>1?'<h3>'+esc(c.s)+'</h3>':'')+'<dl>'+c.p.map(x=>'<div><dt>'+esc(x[0])+'</dt><dd>'+esc(x[1])+'</dd></div>').join('')+'</dl>').join('')+'</details>'}
   h+='<div class="row">'+(SEMIO?'<a class="btnlink primary" target="_blank" rel="noopener" href="'+esc(SEMIO+'?ask='+encodeURIComponent(t('semioQ')(nm(p))))+'">'+t('askSemio')+'</a>':'')+'<button type="button" id="bClose">'+t('close')+'</button></div>'}
   el.innerHTML=h;el.hidden=false;el.classList.toggle('min',cardMin);
